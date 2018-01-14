@@ -1,0 +1,7 @@
+[package]
+name = "learn"
+version = "0.1.0"
+authors = ["msyfls123 <msyfls123@gmail.com>"]
+
+[dependencies]
+url = "1.6.0"
