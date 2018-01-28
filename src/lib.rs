@@ -9,3 +9,4 @@ mod tests {
 pub mod url;
 pub mod print;
 pub mod thread;
+pub mod adventofcode;
