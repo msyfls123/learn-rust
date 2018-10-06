@@ -28,7 +28,31 @@ impl Iterator for Fibonacci {
 }
 
 fn main() {
-    println!("hello, world!");
+    use std::env;
+    use std::process;
+
+    // Read number from cmd line.
+    let idx = match env::args().nth(1).and_then(|n| n.parse().ok()) {
+        None => {
+            eprintln!("Provide a number");
+            process::exit(1);
+        },
+        Some(0) => {
+            eprintln!("Value out of range");
+            process::exit(2);
+        },
+        Some(n) => n,
+    };
+
+    let value = match Fibonacci::new().nth(idx - 1) {
+        None => {
+            eprintln!("Value out of range");
+            process::exit(2);
+        },
+        Some(n) => n,
+    };
+
+    println!("{}", value);
 }
 
 #[cfg(test)]
