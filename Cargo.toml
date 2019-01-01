@@ -1,6 +1,9 @@
 [package]
-name = "learn"
+name = "tutorial"
 version = "0.1.0"
 authors = ["msyfls123 <msyfls123@gmail.com>"]
+
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
