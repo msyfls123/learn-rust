@@ -6,9 +6,11 @@ authors = ["msyfls123 <msyfls123@gmail.com>"]
 [workspace]
 members = [
     "gui",
+    "advent_of_code",
 ]
 default-members = [
     "gui",
+    "advent_of_code",
 ]
 
 

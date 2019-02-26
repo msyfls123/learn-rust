@@ -1,0 +1,11 @@
+[package]
+name = "advent_of_code"
+version = "0.1.0"
+authors = ["msyfls123 <m18771058712@live.com>"]
+edition = "2018"
+
+[dependencies]
+
+[[bin]]
+name = "2017-9"
+path = "src/aoc2017/day9.rs"
