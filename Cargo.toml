@@ -3,4 +3,13 @@ name = "learn"
 version = "0.1.0"
 authors = ["msyfls123 <msyfls123@gmail.com>"]
 
+[workspace]
+members = [
+    "gui",
+]
+default-members = [
+    "gui",
+]
+
+
 [dependencies]
