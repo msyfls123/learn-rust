@@ -1,6 +1,31 @@
 # learn-rust
 
-- [Fibonacci](https://github.com/msyfls123/learn-rust/tree/fibonacci)
+
+### AdventOfCode
+
+YYYY/d: `cargo run --bin {YYYY}-{d}`
+
+Available:
+- 2017/9
+
+---
+
+### GUI
+
+- [Relm](https://github.com/antoyo/relm) based on gtk
+- [gtk](https://gtk-rs.org/) with msys2 GTK3 installation
+- [conrod](https://github.com/PistonDevelopers/conrod)
+
+---
+
+### Exercises
+
+- Fibonacci: `cargo run --bin fibonacci {d:12}`
+
+---
+
+### Others
+
 - [Future](https://github.com/msyfls123/learn-rust/tree/future)
 - [Hash](https://github.com/msyfls123/learn-rust/tree/hash)
-- [AdventOfCode](https://github.com/msyfls123/learn-rust/tree/advent)
+- [WASM](https://github.com/msyfls123/learn-rust/tree/wasm) alpha
