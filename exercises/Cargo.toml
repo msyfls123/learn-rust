@@ -1,0 +1,11 @@
+[package]
+name = "exercises"
+version = "0.1.0"
+authors = ["msyfls123 <m18771058712@live.com>"]
+edition = "2018"
+
+[[bin]]
+name = "fibonacci"
+path = "src/fibonacci.rs"
+
+[dependencies]

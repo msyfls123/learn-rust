@@ -7,10 +7,12 @@ authors = ["msyfls123 <msyfls123@gmail.com>"]
 members = [
     "gui",
     "advent_of_code",
+    "exercises",
 ]
 default-members = [
     "gui",
     "advent_of_code",
+    "exercises",
 ]
 
 
