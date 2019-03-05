@@ -17,14 +17,17 @@ fn get_array(path: &Path) -> Vec<String> {
 }
 
 
-pub fn resolve_1() {
+pub fn resolve() {
     let path = Path::new("advent_of_code").join("src").join("aoc2017").join("day9_data.txt");
     let array = get_array(&path);
     let mut canceled = false;
     let mut inside_garbage = false;
     let mut bracket = 0;
     let mut total = 0;
+    let mut total_garbage_char = 0;
     for item in array {
+        let already_canceled = canceled;
+        let already_inside_garbage = inside_garbage;
         match &item[..] {
             "{" => {
                 if !inside_garbage {
@@ -67,11 +70,15 @@ pub fn resolve_1() {
                     canceled = false;
                 }
             }
-        }
+        };
+        if !already_canceled && !canceled && already_inside_garbage && inside_garbage {
+            total_garbage_char += 1;
+        };
     };
-    println!("{}", total);
+    println!("total group score: {}", total);
+    println!("total garbage count: {}", total_garbage_char);
 }
 
 fn main() {
-    resolve_1()
+    resolve()
 }
