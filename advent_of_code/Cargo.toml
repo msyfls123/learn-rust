@@ -9,3 +9,7 @@ edition = "2018"
 [[bin]]
 name = "2017-9"
 path = "src/aoc2017/day9.rs"
+
+[[bin]]
+name = "2017-10"
+path = "src/aoc2017/day10.rs"
