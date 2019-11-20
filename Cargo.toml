@@ -2,18 +2,24 @@
 name = "learn"
 version = "0.1.0"
 authors = ["msyfls123 <msyfls123@gmail.com>"]
+default-run = "main"
 
 [workspace]
 members = [
+    "./",
     "gui",
     "advent_of_code",
     "exercises",
 ]
 default-members = [
+    "./",
     "gui",
     "advent_of_code",
     "exercises",
 ]
 
+[[bin]]
+name = 'main'
+path = 'src/main.rs'
 
 [dependencies]
