@@ -2,7 +2,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 
-pub fn get_str_array_from_file(path_list: Vec<&str>) -> Vec<String> {
+pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
   let path = path_list.iter().fold(
     Path::new("advent_of_code").join("src"),
     |acc, x| acc.join(x)
