@@ -21,3 +21,7 @@ path = "src/aoc2017/day11.rs"
 [[bin]]
 name = "2017-12"
 path = "src/aoc2017/day12.rs"
+
+[[bin]]
+name = "2017-13"
+path = "src/aoc2017/day13.rs"
