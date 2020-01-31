@@ -46,7 +46,7 @@ pub fn get_knot_hash(raw_string: &str) -> u128 {
     )
 }
 
-fn main() {
+pub fn main() {
     let mut data_list: Vec<i64> = (0..256).collect();
     let raw_list = vec![147,37,249,1,31,2,226,0,161,71,254,243,183,255,30,70];
     round(&mut data_list, &raw_list[..], 0, 0);
