@@ -37,16 +37,9 @@ fn partner(array: &Vec<char>, text: &str) -> Vec<char> {
   new_array
 }
 
-fn main() {
-  let array: Vec<String> = get_str_array_from_file(&vec!{"aoc2017", "day16_data.txt"})
-    .first()
-    .unwrap()
-    .split(",")
-    .map(|x| x.to_string())
-    .collect();
-
-  let result: String = array.iter().fold(
-    (0..16).map(|x| ((x as u8) + 97 ) as char).collect::<Vec<char>>(),
+fn dance(programs: &Vec<char>, array: &Vec<String>) -> Vec<char> {
+  array.iter().fold(
+    programs.to_vec(),
     |acc, text| {
       match text.chars().next().unwrap() {
           's' => spin(&acc, text),
@@ -55,6 +48,30 @@ fn main() {
           _ => acc,
       }
     }
-  ).into_iter().collect();
-  println!("Part 1: {}", result);
+  )
+}
+
+fn main() {
+  let array: Vec<String> = get_str_array_from_file(&vec!{"aoc2017", "day16_data.txt"})
+    .first()
+    .unwrap()
+    .split(",")
+    .map(|x| x.to_string())
+    .collect();
+  let initial_programs = (0..16).map(|x| ((x as u8) + 97 ) as char).collect::<Vec<char>>();
+
+  let dance_once = dance(
+    &initial_programs,
+    &array,
+  );
+  println!("Part 1: {}", dance_once.clone().into_iter().collect::<String>());
+
+  let mut cycle_programs: Vec<Vec<char>> = vec!{initial_programs.clone()};
+  let mut programs = dance_once.clone();
+  while programs != initial_programs {
+    cycle_programs.push(programs.clone());
+    programs = dance(&programs, &array);
+  }
+  let dance_billion_times = &cycle_programs[1_000_000_000 % cycle_programs.len()];
+  println!("Part 2: {}", dance_billion_times.clone().into_iter().collect::<String>());
 }
