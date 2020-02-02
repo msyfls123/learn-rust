@@ -16,4 +16,14 @@ fn main() {
   );
   let position_2017 = circular_buffer.iter().position(|&x| x == 2017).unwrap();
   println!("Part 1: {}", circular_buffer[position_2017 + 1]);
+
+  let result: Vec<usize> = (1..=50_000_000).scan(
+    (0, 0),
+    |(position, value), x| {
+      *position = (*position + puzzle_input) % x + 1;
+      *value = x;
+      Some((*position, *value))
+    }
+  ).filter(|(position, _)| *position == 1).map(|(_, value)| value).collect();
+  println!("Part 2: {}", result.last().unwrap());
 }
