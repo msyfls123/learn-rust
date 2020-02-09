@@ -47,7 +47,3 @@ path = "src/aoc2017/day17.rs"
 [[bin]]
 name = "2017-18"
 path = "src/aoc2017/day18.rs"
-
-[[bin]]
-name = "2017-18-2"
-path = "src/aoc2017/day18_2.rs"
