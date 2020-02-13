@@ -9,6 +9,7 @@ struct Point {
     direction: Direction,
     at_end: bool,
     letters: Vec<String>,
+    steps: usize,
 }
 
 impl Point {
@@ -32,6 +33,7 @@ fn is_same_direction(dir_a: Direction, dir_b: Direction) -> bool {
 
 fn run(diagram: &Vec<Vec<&str>>, point: &mut Point) {
     point.go(point.direction, true);
+    point.steps += 1;
     point.at_end = SIBLINGS.iter().filter(|&x| {
         let next_position = point.go(*x, false);
         diagram[next_position.0][next_position.1] == " "
@@ -66,9 +68,10 @@ fn main() {
     let array = get_str_array_from_file(&vec!{"aoc2017", "day19_data.txt"});
     let diagram: Vec<Vec<&str>> = array.iter().map(|line| line.split("").filter(|&x| x != "").collect()).collect();
     let start_index = diagram[0].iter().position(|&x| x == "|").unwrap();
-    let mut point = Point { position:(0, start_index), direction: (1, 0), at_end: false, letters: vec!{} };
+    let mut point = Point { position:(0, start_index), direction: (1, 0), at_end: false, letters: vec!{}, steps: 1 };
     while !point.at_end {
         run(&diagram, &mut point);
     };
     println!("Part 1: {}", point.letters.join(""));
+    println!("Part 2: {}", point.steps);
 }
