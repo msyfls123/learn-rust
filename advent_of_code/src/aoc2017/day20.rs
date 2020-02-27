@@ -1,8 +1,9 @@
-extern crate regex;
 #[macro_use] extern crate lazy_static;
+extern crate regex;
 
 use regex::Regex;
 use advent_of_code::get_str_array_from_file;
+use advent_of_code::aoc2017::day20_2::resolve;
 
 fn get_acceleration(text: &str) -> i32 {
   lazy_static! {
@@ -17,7 +18,7 @@ fn get_acceleration(text: &str) -> i32 {
 
 fn get_velocity(text: &str) -> i32 {
   lazy_static! {
-    static ref RE_VELOCITY: Regex = Regex::new(r"v=<([-]{0,1}\d+),([-]{0,1}\d+),([-]{0,1}\d+)>").unwrap();
+    static ref RE_VELOCITY: Regex = Regex::new(&format!(r"{}=<([-]{{0,1}}\d+),([-]{{0,1}}\d+),([-]{{0,1}}\d+)>", "v")[..]).unwrap();
   }
   let cap = &RE_VELOCITY.captures(text).unwrap();
   let x = cap[1].parse::<i32>().unwrap().abs();
@@ -33,4 +34,5 @@ fn main() {
   let min_v = v_and_a_list.iter().filter(|(a, _)| a == min_a).map(|(_, v)| v).min().unwrap();
   let min_position = v_and_a_list.iter().position(|&x| x == (*min_a, *min_v)).unwrap();
   println!("Part 1: {}", min_position);
+  resolve();
 }
