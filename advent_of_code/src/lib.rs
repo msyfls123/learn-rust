@@ -13,7 +13,7 @@ pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
   let mut file = File::open(path).unwrap();
   let mut s = String::new();
   file.read_to_string(&mut s).unwrap();
-  let array: Vec<String> = s.split("\n").filter_map(|x| {
+  let array: Vec<String> = s.lines().filter_map(|x| {
     if x == "" {
         None
     } else {
