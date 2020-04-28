@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use advent_of_code::get_str_array_from_file;
-use advent_of_code::aoc2017::day18_2::resolve;
+mod day18_2;
+use day18_2::resolve;
 
 type MapType = HashMap<char, i64>;
 

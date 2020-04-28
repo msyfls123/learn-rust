@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use super::super::get_str_array_from_file;
+use advent_of_code::get_str_array_from_file;
 
 type MapType = HashMap<char, i64>;
 
