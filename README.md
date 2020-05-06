@@ -35,6 +35,10 @@ Available:
 
 ---
 
+### Isomorphic Web App
+
+- Percy: `cd wasm && sh ./build.sh`
+
 ### Others
 
 - [Future](https://github.com/msyfls123/learn-rust/tree/future)

@@ -10,12 +10,14 @@ members = [
     "gui",
     "advent_of_code",
     "exercises",
+    "wasm",
 ]
 default-members = [
     "./",
     "gui",
     "advent_of_code",
     "exercises",
+    "wasm",
 ]
 
 [[bin]]
