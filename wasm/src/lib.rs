@@ -58,19 +58,19 @@ impl View for HomeView {
     html! {
       // Use regular Rust comments within your html
       <div class="big blue">
-      /* Interpolate values using braces */
-      <strong>{ click_count }</strong>
+        /* Interpolate values using braces */
+        <strong>{ click_count }</strong>
       
-      <button
-        class=MY_COMPONENT_CSS
-        onclick=move |_event: web_sys::Event| {
-          web_sys::console::log_1(&"Button Clicked!".into());
-          store.borrow_mut().increment_click();
-        }
-      >
-      // No need to wrap text in quotation marks (:
-        Click me and check your console
-      </button>
+        <button
+          class=MY_COMPONENT_CSS
+          onclick=move |_event: web_sys::Event| {
+            web_sys::console::log_1(&"Button Clicked!".into());
+            store.borrow_mut().increment_click();
+          }
+        >
+          // No need to wrap text in quotation marks (:
+          Click me and check your console
+        </button>
       </div>
     }
   }
