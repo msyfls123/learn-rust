@@ -1,3 +1,4 @@
 fn main() {
-    println!("{}", "hello, advent of code!");
+    println!("{}", "Hello, Advent Of Code!");
+    println!("{}", "Puzzles like: https://adventofcode.com/2017/day/21")
 }
