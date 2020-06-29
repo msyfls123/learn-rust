@@ -9,6 +9,9 @@ use virtual_dom_rs::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use serde::{Deserialize, Serialize};
+use serde_json;
+
 // Expose globals from JS for things such as request animation frame
 // that web sys doesn't seem to have yet
 //
@@ -24,6 +27,7 @@ extern "C" {
     pub fn update(this: &GlobalJS);
 }
 
+#[derive(Serialize, Deserialize)]
 struct Store {
     click_count: Rc<Cell<u32>>,
 }
@@ -36,6 +40,9 @@ impl Store {
         web_sys::console::log_1(&"Updating state".into());
         global_js.update();
         self.click_count.set(self.click_count.get() + 1);
+    }
+    fn from_json(state_json: &str) -> Self {
+        serde_json::from_str(state_json).unwrap()
     }
 }
 
@@ -77,7 +84,7 @@ impl View for HomeView {
 }
 
 #[wasm_bindgen]
-struct App {
+pub struct App {
     dom_updater: DomUpdater,
     view: HomeView,
 }
@@ -85,15 +92,16 @@ struct App {
 #[wasm_bindgen]
 impl App {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> App {
+    pub fn new(json: &str) -> App {
         let start_view = html! { <div> Hello </div> };
 
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let body = document.body().unwrap();
-        let store = Rc::new(RefCell::new(Store {
-            click_count: Rc::new(Cell::new(0)),
-        }));
+        // let store = Rc::new(RefCell::new(Store {
+        //     click_count: Rc::new(Cell::new(0)),
+        // }));
+        let store = Rc::new(RefCell::new(Store::from_json(json)));
         let mut dom_updater = DomUpdater::new_append_to_mount(start_view, &body);
 
         let view = HomeView::new(store);
