@@ -1,4 +1,5 @@
 #!/bin/bash
+# DO NOT USE ME! JUST COPY!
 
 cd "$(dirname "$0")"
 

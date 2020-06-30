@@ -1,16 +1,18 @@
+# Serve
 
-## Serve
 
-```
 # Used to compile your Rust code to WebAssembly
+```
 cargo install wasm-pack
-
-# Or any other static file server that supports the application/wasm mime type
-npm install -g http-server
-
+cd client
 chmod +x ./build.sh
 ./build.sh
-
-# Visit localhost:8080 in your browser
-http-server ./public --open
+cd -
+cargo run
 ```
+
+### Visit localhost:7878/?init=77 in your browser, have fun
+
+~~Or any other static file server that supports the application/wasm mime type (deprecated)~~
+
+~~npm install -g http-server~~
