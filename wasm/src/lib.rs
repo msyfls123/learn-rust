@@ -28,7 +28,7 @@ extern "C" {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Store {
+pub struct Store {
     click_count: Rc<Cell<u32>>,
 }
 
@@ -41,12 +41,15 @@ impl Store {
         global_js.update();
         self.click_count.set(self.click_count.get() + 1);
     }
-    fn from_json(state_json: &str) -> Self {
+    pub fn from_json(state_json: &str) -> Self {
         serde_json::from_str(state_json).unwrap()
+    }
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self).unwrap()
     }
 }
 
-pub struct HomeView {
+struct HomeView {
     store: Rc<RefCell<Store>>,
 }
 
@@ -62,6 +65,8 @@ impl View for HomeView {
 
         let click_count = self.store.borrow().click_count();
         let click_count = &*click_count.to_string();
+
+
         html! {
           // Use regular Rust comments within your html
           <div class="big blue">
@@ -83,35 +88,21 @@ impl View for HomeView {
     }
 }
 
-#[wasm_bindgen]
 pub struct App {
-    dom_updater: DomUpdater,
     view: HomeView,
+    pub store: Rc<RefCell<Store>>,
 }
 
-#[wasm_bindgen]
 impl App {
-    #[wasm_bindgen(constructor)]
     pub fn new(json: &str) -> App {
-        let start_view = html! { <div> Hello </div> };
-
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let body = document.body().unwrap();
-        // let store = Rc::new(RefCell::new(Store {
-        //     click_count: Rc::new(Cell::new(0)),
-        // }));
         let store = Rc::new(RefCell::new(Store::from_json(json)));
-        let mut dom_updater = DomUpdater::new_append_to_mount(start_view, &body);
 
-        let view = HomeView::new(store);
+        let view = HomeView::new(Rc::clone(&store));
 
-        dom_updater.update(view.render());
-
-        App { dom_updater, view }
+        App { view, store }
     }
-    pub fn render(&mut self) {
-        self.dom_updater.update(self.view.render());
+    pub fn render(&self) -> VirtualNode {
+        self.view.render()
     }
 }
 
@@ -125,6 +116,7 @@ static MY_COMPONENT_CSS: &'static str = css! {r#"
 static _MORE_CSS: &'static str = css! {r#"
 .big {
   font-size: 30px;
+  font-weight: bold;
 }
 
 .blue {

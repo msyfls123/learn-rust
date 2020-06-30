@@ -4,12 +4,24 @@ version = "0.1.0"
 authors = ["msyfls123 <msyfls123@gmail.com>"]
 edition = "2018"
 
+[workspace]
+members = [
+  "./",
+  "client",
+]
+default-members = [
+  "./",
+  "client",
+]
+
+
 [[bin]]
-name = "wasm"
+name = "wasm_bin"
 path = "src/main.rs"
 
 [lib]
-crate-type = ["cdylib"] # Don't forget this!
+path = "src/lib.rs"
+name = "wasm"
 
 [dependencies]
 rocket = "0.4"
