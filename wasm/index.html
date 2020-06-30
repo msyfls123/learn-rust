@@ -3,14 +3,16 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" type="text/css" href="app.css"/>
+        <link rel="stylesheet" type="text/css" href="/static/app.css"/>
         <title>Client Side Demo</title>
     </head>
     <body style='margin: 0; padding: 0; width: 100%; height: 100%;'>
-        <script src='./wasm.js'></script>
+        <div id="wasm-app">
+          #HTML_INSERTED_HERE_BY_SERVER#
+        </div>
+        <script src='/static/wasm_client.js'></script>
         <script>
-            // window.initialState = '#INITIAL_STATE_JSON#'
-            window.initialState = '{"click_count": 2}'
+            window.initialState = '#INITIAL_STATE_JSON#'
         </script>
         <script>
             let client
@@ -31,9 +33,9 @@
             }
             window.global_js = new GlobalJS()
 
-            wasm_bindgen(`./wasm_bg.wasm`).then(() => {
-                const { App } = wasm_bindgen
-                client = new App(window.initialState)
+            wasm_bindgen(`/static/wasm_client_bg.wasm`).then(() => {
+                const { Client } = wasm_bindgen
+                client = new Client(window.initialState)
             })
         </script>
     </body>

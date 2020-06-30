@@ -1,7 +1,6 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use] extern crate rocket;
-// try to import App from cdylib failed, should use client to wrap it
-// use crate::App;
+use wasm::App;
 use rocket::http::ContentType;
 use rocket::response::Response;
 use rocket::{Rocket, Config};
@@ -25,7 +24,8 @@ fn main() {
 
   rocket::custom(config)
       .mount("/", routes![index, favicon, catch_all])
-      .mount("/static", StaticFiles::from(format!("{}/public", env!("CARGO_MANIFEST_DIR")).as_str()));
+      .mount("/static", StaticFiles::from(format!("{}/public", env!("CARGO_MANIFEST_DIR")).as_str()))
+      .launch();
 }
 
 /// # Example
@@ -50,9 +50,8 @@ fn favicon() -> &'static str {
 }
 
 fn respond(path: String, init: Option<u32>) -> Result<Response<'static>, ()> {
-    let app = App::from_json(
-        init.unwrap_or(1001),
-        path,
+    let app = App::new(
+        &format!("{{\"click_count\": {}}}", init.unwrap_or(0)),
     );
     let state = app.store.borrow();
 
