@@ -5,19 +5,8 @@
 
 YYYY/d: `cargo run --bin {YYYY}-{d}`
 
-Available:
-- 2017-9
-- 2017-10
-- 2017-11
-- 2017-12
-- 2017-13
-- 2017-14
-- 2017-15
-- 2017-16
-- 2017-17
-- 2017-18
-- 2017-19
-- 2017-20
+Available: 2017-9 .. 2017-22
+
 
 ---
 
@@ -37,7 +26,7 @@ Available:
 
 ### Isomorphic Web App
 
-- Percy: `cd wasm && sh ./build.sh`
+- Percy: `cd wasm && sh .client/build.sh && cargo run`
 
 ### Others
 
