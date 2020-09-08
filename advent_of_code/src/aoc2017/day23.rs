@@ -96,6 +96,7 @@ fn main() {
   let instructions: Vec<Vec<&str>> = array.iter().map(
     |x| x.split(" ").collect()
   ).collect();
+  // Part 1
   let mut map: MapType = HashMap::new();
   let mut current_index: usize = 0;
   let mut mul_called_times: usize = 0;
@@ -109,4 +110,20 @@ fn main() {
     );
   };
   println!("Part 1: {}", mul_called_times);
+  // Part 2
+  let mut map: MapType = HashMap::new();
+  map.entry('a').or_insert(1);
+  let mut current_index: usize = 0;
+  let mut mul_called_times: usize = 0;
+  let instructions_len = instructions.len();
+  while current_index < instructions_len {
+    map = do_instruction(
+      &instructions[current_index],
+      map,
+      &mut current_index,
+      &mut mul_called_times,
+    );
+    println!("{}", *map.entry('g').or_insert(0));
+    println!("{}", *map.entry('h').or_insert(0));
+  };
 }
