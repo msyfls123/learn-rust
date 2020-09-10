@@ -28,6 +28,33 @@ fn max(
   }
 }
 
+fn max_by_depth(
+  components: &Vec<Component>,
+  start: usize,
+  used: &Vec<usize>,
+) -> (usize, usize) {
+  let starts: Vec<(usize, &Component)> = components.iter().enumerate().filter(|(i, x)| {
+    (x[0] == start || x[1] == start) && !used.contains(&i)
+  }).collect();
+  if starts.len() > 0 {
+    starts.iter().map(|(i, comp)| {
+      let next_start = if comp[0] == start {
+        comp[1]
+      } else {
+        comp[0]
+      };
+      let (depth, highest) = max_by_depth(
+        &components,
+        next_start,
+        &[&used[..], &[*i]].concat()
+      );
+      (depth + 1, (comp.iter().sum::<usize>()) + highest)
+    }).max().unwrap()
+  } else {
+    (0, 0)
+  }
+}
+
 fn main() {
   let array = get_str_array_from_file(&vec!{"aoc2017/day24_data.txt"});
   let components: Vec<Component> = array.iter().map(|x| {
@@ -37,4 +64,5 @@ fn main() {
   }).collect();
   println!("{:?}", components);
   println!("Part 1: {}", max(&components, 0, &vec!{}));
+  println!("Part 2: {}", max_by_depth(&components, 0, &vec!{}).1);
 }
