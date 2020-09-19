@@ -1,0 +1,84 @@
+{
+  "begin": "A",
+  "steps": 12523873,
+  "configs": [
+    {
+      "state": "A",
+      "zero": {
+        "write": 1,
+        "step": 1,
+        "next": "B"
+      },
+      "one": {
+        "write": 1,
+        "step": -1,
+        "next": "E"
+      }
+    },
+    {
+      "state": "B",
+      "zero": {
+        "write": 1,
+        "step": 1,
+        "next": "C"
+      },
+      "one": {
+        "write": 1,
+        "step": 1,
+        "next": "F"
+      }
+    },
+    {
+      "state": "C",
+      "zero": {
+        "write": 1,
+        "step": -1,
+        "next": "D"
+      },
+      "one": {
+        "write": 0,
+        "step": 1,
+        "next": "B"
+      }
+    },
+    {
+      "state": "D",
+      "zero": {
+        "write": 1,
+        "step": 1,
+        "next": "E"
+      },
+      "one": {
+        "write": 0,
+        "step": -1,
+        "next": "C"
+      }
+    },
+    {
+      "state": "E",
+      "zero": {
+        "write": 1,
+        "step": -1,
+        "next": "A"
+      },
+      "one": {
+        "write": 0,
+        "step": 1,
+        "next": "D"
+      }
+    },
+    {
+      "state": "F",
+      "zero": {
+        "write": 1,
+        "step": 1,
+        "next": "A"
+      },
+      "one": {
+        "write": 1,
+        "step": 1,
+        "next": "C"
+      }
+    }
+  ]
+}
