@@ -5,7 +5,7 @@ use std::io::prelude::*;
 
 pub mod aoc2017;
 
-pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
+pub fn get_str_from_file(path_list: &Vec<&str>) -> String {
   let path = path_list.iter().fold(
     Path::new("advent_of_code").join("src"),
     |acc, x| acc.join(x)
@@ -13,6 +13,11 @@ pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
   let mut file = File::open(path).unwrap();
   let mut s = String::new();
   file.read_to_string(&mut s).unwrap();
+  s
+}
+
+pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
+  let s = get_str_from_file(&path_list);
   let array: Vec<String> = s.lines().filter_map(|x| {
     if x == "" {
         None
