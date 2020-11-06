@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Rectangle {
+  id: i32,
   x: i32,
   y: i32,
   width: i32,
@@ -18,11 +19,13 @@ fn get_claim(text: &str) -> Rectangle {
     static ref RE_DISTANCE: Regex = Regex::new(r"#(?P<id>\d+)\s@\s(?P<x>\d+),(?P<y>\d+):\s(?P<width>\d+)x(?P<height>\d+)").unwrap();
   }
   let captured = RE_DISTANCE.captures(text).unwrap();
+  let id = captured.name("id").unwrap().as_str().parse::<i32>().unwrap();
   let x = captured.name("x").unwrap().as_str().parse::<i32>().unwrap();
   let y = captured.name("y").unwrap().as_str().parse::<i32>().unwrap();
   let width = captured.name("width").unwrap().as_str().parse::<i32>().unwrap();
   let height = captured.name("height").unwrap().as_str().parse::<i32>().unwrap();
   Rectangle {
+    id,
     x,
     y,
     width,
@@ -44,4 +47,25 @@ fn main() {
   });
   let count = map.values().filter(|&x| *x > 1).count();
   println!("Part 1: {}", count);
+  let map = map;
+  let intact = claims.iter().find(|rec| {
+    (rec.x..(rec.x + rec.width)).all(|x| {
+      (rec.y..(rec.y + rec.height)).all(|y| {
+        match map.get(&(x, y)) {
+          Some(&v) => if v == 1 {
+            true
+          } else {
+            false
+          },
+          None => false
+        }
+      })
+    })
+  });
+  match intact {
+    Some(claim) => {
+      println!("Part 2: {}", claim.id);
+    },
+    None => ()
+  };
 }
