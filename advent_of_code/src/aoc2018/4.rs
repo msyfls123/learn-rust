@@ -1,8 +1,10 @@
 #[macro_use] extern crate lazy_static;
 extern crate regex;
+extern crate chrono;
 
-use regex::{ Regex };
 use core::cmp::*;
+use regex::{ Regex };
+use chrono::{ NaiveDateTime, Timelike, Datelike, Duration };
 use advent_of_code::get_str_array_from_file;
 
 #[derive(Debug, Eq)]
@@ -14,15 +16,13 @@ enum Event {
 
 #[derive(Debug, Eq)]
 struct Record {
-  month: i32,
-  day: i32,
-  minute: i32,
+  datetime: NaiveDateTime,
   event: Event,
 }
 
 impl Ord for Record {
   fn cmp(&self, other: &Self) -> Ordering {
-    (self.month, self.day, self.minute).cmp(&(other.month, other.day, other.minute))
+    self.datetime.cmp(&other.datetime)
   }
 }
 
@@ -49,27 +49,22 @@ impl PartialEq for Event {
 
 impl PartialEq for Record {
   fn eq(&self, other: &Self) -> bool {
-      (self.month, self.day, self.minute, &self.event) == (other.month, other.day, other.minute, &other.event)
+      self.datetime == other.datetime
   }
 }
 
 fn get_record(text: &str) -> Record {
   lazy_static! {
-    static ref RE: Regex = Regex::new(r"\[(?P<year>\d{4})-(?P<month>\d{2})\-(?P<day>\d{2})\s(?P<hour>\d{2}):(?P<minute>\d{2})\]\s(?P<event>.*)$").unwrap();
+    static ref RE_DATETIME: Regex = Regex::new(r"\[(?P<datetime>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2})\]\s(?P<event>.*)$").unwrap();
     static ref RE_EVENT: Regex = Regex::new(r"Guard\s#(?P<id>\d+)").unwrap();
   }
-  let captured = RE.captures(text).unwrap();
-  let month = captured.name("month").unwrap().as_str().parse::<i32>().unwrap();
-  let mut day = captured.name("day").unwrap().as_str().parse::<i32>().unwrap();
-  let hour = captured.name("hour").unwrap().as_str().parse::<i32>().unwrap();
-  let mut minute = captured.name("minute").unwrap().as_str().parse::<i32>().unwrap();
+  let captured = RE_DATETIME.captures(text).unwrap();
+  let datetime_text = captured.name("datetime").unwrap().as_str();
+  let mut datetime = NaiveDateTime::parse_from_str(datetime_text, "%Y-%m-%d %H:%M").unwrap();
   let event_text = captured.name("event").unwrap().as_str();
 
-  // TODO: should use chrono to parse date and modify it
-  // https://rust-lang-nursery.github.io/rust-cookbook/datetime/parse.html
-  if hour > 0 {
-    day += 1;
-    minute = 0;
+  if datetime.hour() > 0 {
+    datetime = datetime.with_hour(0).unwrap().with_minute(0).unwrap() + Duration::days(1);
   }
 
   let event: Event;
@@ -87,9 +82,7 @@ fn get_record(text: &str) -> Record {
   };
 
   Record {
-    month,
-    day,
-    minute,
+    datetime,
     event,
   }
 }
@@ -98,5 +91,8 @@ fn main() {
   let array = get_str_array_from_file(&vec!{"aoc2018", "data", "4.txt"});
   let mut data: Vec<Record> = array.iter().map(|x| get_record(x)).collect();
   data.sort();
-  println!("{:?}", data);
+  let found: Vec<&Record> = data.iter().filter(|record| {
+    record.datetime.month() == 9 && record.datetime.day() == 1
+  }).collect();
+  println!("{:?}", found);
 }
