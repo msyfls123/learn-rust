@@ -3,13 +3,15 @@ extern crate regex;
 extern crate chrono;
 
 use core::cmp::*;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use regex::{ Regex };
-use chrono::{ NaiveDateTime, Timelike, Datelike, Duration };
+use chrono::{ NaiveDateTime, Timelike, Duration };
 use advent_of_code::get_str_array_from_file;
 
 #[derive(Debug, Eq)]
 enum Event {
-  Shift(i32),
+  Shift(u32),
   FallsAsleep,
   WakeUp,
 }
@@ -70,7 +72,7 @@ fn get_record(text: &str) -> Record {
   let event: Event;
   match RE_EVENT.captures(event_text) {
     Some(cap) => {
-      event = Event::Shift(cap.name("id").unwrap().as_str().parse::<i32>().unwrap());
+      event = Event::Shift(cap.name("id").unwrap().as_str().parse::<u32>().unwrap());
     },
     None => {
       event = if event_text == "falls asleep" {
@@ -87,12 +89,52 @@ fn get_record(text: &str) -> Record {
   }
 }
 
+type SleepCountMap = HashMap<u32, [usize; 60]>;
+
+fn count_sleep(records: &Vec<Record>) -> SleepCountMap {
+  let mut map: SleepCountMap = HashMap::new();
+  let mut current_guard: u32 = 0;
+  let mut fall_asleep_minute: u32 = 0;
+  records.iter().for_each(|record| {
+    match record.event {
+      Event::Shift(guard) => {
+        if fall_asleep_minute > 0 {
+          let entry = map.entry(current_guard).or_insert([0; 60]);
+          (fall_asleep_minute..60).for_each(|x| {
+            let index: usize = x.try_into().unwrap();
+            (*entry)[index] += 1;
+          });
+        }
+        current_guard = guard;
+      },
+      Event::FallsAsleep => {
+        fall_asleep_minute = record.datetime.minute();
+      }
+      Event::WakeUp => {
+        let entry = map.entry(current_guard).or_insert([0; 60]);
+        let wakeup_minute = record.datetime.minute();
+        (fall_asleep_minute..wakeup_minute).for_each(|x| {
+          let index: usize = x.try_into().unwrap();
+          (*entry)[index] += 1;
+        });
+        fall_asleep_minute = 0;
+      }
+    }
+  });
+  map
+}
+
 fn main() {
   let array = get_str_array_from_file(&vec!{"aoc2018", "data", "4.txt"});
-  let mut data: Vec<Record> = array.iter().map(|x| get_record(x)).collect();
-  data.sort();
-  let found: Vec<&Record> = data.iter().filter(|record| {
-    record.datetime.month() == 9 && record.datetime.day() == 1
-  }).collect();
-  println!("{:?}", found);
+  let mut records: Vec<Record> = array.iter().map(|x| get_record(x)).collect();
+  records.sort();
+
+  let map = count_sleep(&records);
+  let most_sleep_guard = map.keys().map(|k| {
+    let values = map.get(k).unwrap();
+    let sum: usize = values.iter().sum();
+    (k, sum, values)
+  }).max_by_key(|x| x.1).unwrap();
+  let most_sleep_minute: u32 = most_sleep_guard.2.iter().enumerate().max_by_key(|x| x.1).unwrap().0.try_into().unwrap();
+  println!("Part 1: {}", most_sleep_guard.0 * most_sleep_minute);
 }
