@@ -130,6 +130,7 @@ fn main() {
   records.sort();
 
   let map = count_sleep(&records);
+
   let most_sleep_guard = map.keys().map(|k| {
     let values = map.get(k).unwrap();
     let sum: usize = values.iter().sum();
@@ -137,4 +138,12 @@ fn main() {
   }).max_by_key(|x| x.1).unwrap();
   let most_sleep_minute: u32 = most_sleep_guard.2.iter().enumerate().max_by_key(|x| x.1).unwrap().0.try_into().unwrap();
   println!("Part 1: {}", most_sleep_guard.0 * most_sleep_minute);
+
+  let most_frequently_asleep_guard = map.keys().map(|k| {
+    let values = map.get(k).unwrap();
+    let max_pair = values.iter().enumerate().max_by_key(|(_, x)| x.clone()).unwrap();
+    (k, max_pair)
+  }).max_by_key(|x| x.1.1).unwrap();
+  let most_frequently_asleep_minute: u32 = most_frequently_asleep_guard.1.0.try_into().unwrap();
+  println!("Part 2: {}", most_frequently_asleep_guard.0 * most_frequently_asleep_minute);
 }
