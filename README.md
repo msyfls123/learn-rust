@@ -5,7 +5,9 @@
 
 YYYY/d: `cargo run --bin {YYYY}-{d}`
 
-Available: 2017-9 .. 2017-24
+Available:
+- 2017-9 .. 2017-25
+- 2018-1 .. 2018-6
 
 
 ---
