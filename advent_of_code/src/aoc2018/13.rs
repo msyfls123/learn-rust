@@ -14,12 +14,14 @@ static TURNS_LIST: [char; 9] = ['/', '\\', '+', '-', '|', '^', 'v', '>', '<'];
 
 impl Cart {
   fn meet_intersection(&self) -> (isize, isize) {
-    let turns = (self.met_intersection + 2) % 4;
-    let mut speed = self.speed.clone();
-    (0..turns).for_each(|_| {
-      speed = (-speed.1, speed.0)
-    });
-    speed
+    let turns = self.met_intersection % 3;
+    let speed = self.speed;
+    match turns {
+      0 => (-speed.1, speed.0),
+      1 => (speed.1, -speed.0),
+      2 => speed,
+      _ => panic!("no no no")
+    }
   }
   fn moves(&mut self, turns: &HashMap<Position, char>) {
     let (x, y) = self.position;
@@ -93,24 +95,15 @@ fn main() {
       }
     });
   });
-  // println!("{:?}", carts);
-  // println!("{:?}", turns_map);
   let mut crashed = false;
-  let mut round = 0;
   while !crashed {
     carts.sort_by_key(|c| {
       c.position.1 * (len as isize) + c.position.0
     });
-    // carts.reverse();
-    round += 1;
     let mut positions: HashMap<Position, bool> = HashMap::new();
     carts.iter().for_each(|c| {
       positions.insert(c.position, true);
     });
-    if round % 100 == 0 {
-      println!("=== Round {}", round);
-      println!("{:?}", carts.iter().map(|c| c.position));
-    }
     let cart_len = carts.len();
     (0..cart_len).for_each(|i| {
       let cart = &mut carts[i];
@@ -119,7 +112,7 @@ fn main() {
       match positions.get(&cart.position) {
         Some(_a) => {
           crashed = true;
-          println!("Crashed: {:?}", cart.position);
+          println!("Part 1: the location of the first crash is: {:?}", cart.position);
         },
         _ => {
           positions.insert(cart.position, true);
