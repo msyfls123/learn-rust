@@ -8,6 +8,7 @@ struct Cart {
   speed: (isize, isize),
   position: Position,
   met_intersection: usize,
+  alive: bool
 }
 
 static TURNS_LIST: [char; 9] = ['/', '\\', '+', '-', '|', '^', 'v', '>', '<'];
@@ -88,6 +89,7 @@ fn main() {
             speed,
             position: (x as isize, y as isize),
             met_intersection: 0,
+            alive: true,
           };
           carts.push(cart);
         },
@@ -96,7 +98,7 @@ fn main() {
     });
   });
   let mut crashed = false;
-  while !crashed {
+  while carts.len() > 1 {
     carts.sort_by_key(|c| {
       c.position.1 * (len as isize) + c.position.0
     });
@@ -111,14 +113,24 @@ fn main() {
       cart.moves(&turns_map);
       match positions.get(&cart.position) {
         Some(_a) => {
-          crashed = true;
-          println!("Part 1: the location of the first crash is: {:?}", cart.position);
+          if !crashed {
+            crashed = true;
+            println!("Part 1: the location of the first crash is: {:?}", cart.position);
+          }
+          let (x, y) = cart.position;
+          (0..cart_len).for_each(|j| {
+            let c = &mut carts[j];
+            if c.position.0 == x && c.position.1 == y {
+              c.alive = false;
+            }
+          });
         },
         _ => {
           positions.insert(cart.position, true);
         }
-      }
+      };
     });
+    carts.retain(|c| c.alive);
   }
-  
+  println!("Part 2: the location of the last cart is {:?}", carts[0].position);
 }
