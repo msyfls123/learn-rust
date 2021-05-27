@@ -13,4 +13,18 @@ fn main() {
     None => false,
   }).unwrap();
   println!("Part 1: {}", res * (2020 - res));
+  let len = nums.len();
+  let mut result: (usize, usize, usize) = (0, 0, 0);
+  nums[..len - 2].iter().enumerate().any(|(i, &x)| {
+    nums[i + 1..].iter().enumerate().any(|(j, &y)| {
+      nums[j + 1..].iter().any(|&z| {
+        if x + y + z == 2020 {
+          result = (x, y, z);
+          return true
+        }
+        false
+      })
+    })
+  });
+  println!("Part 2: {}", result.0 * result.1 * result.2);
 }
