@@ -1,11 +1,21 @@
 use itertools::Itertools;
 use advent_of_code::get_str_from_file;
 
+const FIELDS: [&str; 7] = [
+  "byr",
+  "iyr",
+  "eyr",
+  "hgt",
+  "hcl",
+  "ecl",
+  "pid",
+];
+
 fn main() {
   let data: Vec<String> = get_str_from_file(&vec!{"aoc2020", "data", "4.txt"})
     .lines()
     .map(|line| line.to_string()).collect();
-  let chunks: Vec<Vec<String>> = data.into_iter()
+  let passports: Vec<Vec<String>> = data.into_iter()
     .group_by(|line| line == "")
     .into_iter()
     .filter_map(|(_key, group)| {
@@ -24,5 +34,13 @@ fn main() {
         .collect()
     })
     .collect();
-  println!("{:?}", chunks);
+  let valid_passports: Vec<Vec<String>> = passports.iter().filter_map(|passport| {
+    match FIELDS.iter().all(|field| {
+      passport.iter().any(|pair| pair.starts_with(field))
+    }) {
+      true => Some(passport.to_owned()),
+      _ => None,
+    }
+  }).collect();
+  println!("Part 1: {}", valid_passports.len());
 }
