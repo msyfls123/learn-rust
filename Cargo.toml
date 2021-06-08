@@ -21,5 +21,3 @@ default-members = [
 [[bin]]
 name = 'main'
 path = 'src/main.rs'
-
-[dependencies]

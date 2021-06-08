@@ -11,6 +11,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 chrono = "0.4.19"
+itertools = "0.10.0"
 
 [[bin]]
 name = "aoc"
@@ -156,3 +157,7 @@ path = "src/aoc2020/2.rs"
 [[bin]]
 name = "2020-3"
 path = "src/aoc2020/3.rs"
+
+[[bin]]
+name = "2020-4"
+path = "src/aoc2020/4.rs"
