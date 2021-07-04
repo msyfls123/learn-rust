@@ -46,4 +46,32 @@ fn main() {
     }
   ).difference;
   println!("Part 1: {}", difference.j1 * difference.j3);
+
+  joltage_ratings_sorted.insert(0, 0);
+  let arrangements = joltage_ratings_sorted.iter().enumerate().fold(vec!{}, |acc: Vec<i64>, (index, x)| {
+    let mut prev_arrangements = acc.clone();
+    match index {
+      0 => {
+        prev_arrangements.push(1);
+        prev_arrangements
+      },
+      _ => {
+        let lower = match index.checked_sub(3) {
+          Some(v) => v,
+          None => 0,
+        };
+        let current = joltage_ratings_sorted[lower..index]
+          .iter()
+          .zip(&acc[lower..index])
+          .filter(|(&y, _)| y >= x - 3)
+          .map(|t| {
+            t.1
+          })
+          .sum();
+        prev_arrangements.push(current);
+        prev_arrangements
+      }
+    }
+  });
+  println!("Part 2: {:?}", arrangements.last());
 }
