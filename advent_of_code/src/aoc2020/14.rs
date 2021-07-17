@@ -3,6 +3,7 @@ extern crate regex;
 
 use advent_of_code::get_str_array_from_file;
 use regex::Regex;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 enum Instruction {
@@ -27,7 +28,33 @@ fn get_instruction(text: &str) -> Instruction {
 }
 
 fn main() {
+  use Instruction::*;
   let data = get_str_array_from_file(&vec!{"aoc2020", "data", "14.txt"});
   let instructions: Vec<Instruction> = data.iter().map(|text| get_instruction(text)).collect();
-  println!("{:?}", instructions);
+  let mut current_mask: Option<Instruction> = None;
+  let mut memory: HashMap<usize, usize> = HashMap::new();
+  for ins in instructions.iter() {
+    match ins {
+      Mask(mask) => current_mask = Some(Mask(mask.clone())),
+      Write((address, value)) => {
+        let mut val = value.clone();
+        if let Some(Mask(ref mask)) = current_mask {
+          let len = mask.len();
+          val = mask.iter().enumerate().fold(val, |acc, (index, m)| {
+            match m {
+              'X' => acc,
+              '0' => {
+                acc - (acc & (1 << (len - 1 - index)))
+              },
+              '1' => acc | (1 << (len - 1 - index)),
+              _ => panic!("no no no"),
+            }
+          });
+        }
+        memory.insert(*address, val);
+      }
+    }
+  }
+  let sum: usize = memory.values().sum();
+  println!("Paart 1: {}", sum);
 }
