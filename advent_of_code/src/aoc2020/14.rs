@@ -57,4 +57,39 @@ fn main() {
   }
   let sum: usize = memory.values().sum();
   println!("Paart 1: {}", sum);
+
+  let mut current_mask: Option<Instruction> = None;
+  let mut memory: HashMap<usize, usize> = HashMap::new();
+  for ins in instructions.iter() {
+    match ins {
+      Mask(mask) => current_mask = Some(Mask(mask.clone())),
+      Write((address, value)) => {
+        let mut addresses = vec!{*address};
+        if let Some(Mask(ref mask)) = current_mask {
+          let len = mask.len();
+          addresses = mask.iter().enumerate().fold(addresses, |acc, (index, m)| {
+            let bit = len - 1 - index;
+            match m {
+              '0' => acc,
+              '1' => acc.iter().map(|a| a | (1 << bit)).collect(),
+              'X' => {
+                acc.iter().flat_map(|a| {
+                  vec!{
+                    a - (a & (1 << bit)),
+                    a | (1 << bit)
+                  }
+                }).collect()
+              },
+              _ => panic!("no no no"),
+            }
+          });
+        }
+        addresses.iter().for_each(|&a| {
+          memory.insert(a, *value);
+        });
+      }
+    }
+  }
+  let sum: usize = memory.values().sum();
+  println!("Paart 2: {}", sum);
 }
