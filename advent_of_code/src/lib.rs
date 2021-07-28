@@ -2,6 +2,7 @@
 use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
+use itertools::Itertools;
 
 pub mod aoc2017;
 
@@ -26,4 +27,22 @@ pub fn get_str_array_from_file(path_list: &Vec<&str>) -> Vec<String> {
     }
   }).collect();
   array
+}
+
+pub fn get_group_str_from_file(path_list: &Vec<&str>) -> Vec<Vec<String>> {
+  let data: Vec<String> = get_str_from_file(&path_list)
+    .lines()
+    .map(|line| line.to_string()).collect();
+  data
+    .into_iter()
+    .group_by(|line| line == "")
+    .into_iter()
+    .filter_map(|(_match, group)| {
+      let lines: Vec<String> = group.collect();
+      if lines == vec!{String::from("")} {
+        return None
+      }
+      Some(lines)
+    })
+    .collect()
 }
