@@ -1,0 +1,63 @@
+use advent_of_code::get_str_array_from_file;
+
+enum Operator {  
+  Plus,
+  Multiple,
+}
+
+fn operate(num1: usize, num2: usize, operator: &Operator) -> usize {
+  match operator {
+    Operator::Multiple => num1 * num2,
+    Operator::Plus => num1 + num2,
+  }
+}
+
+fn traverse(expression: &Vec<String>, mut index: usize) -> (usize, usize) {
+  let len = expression.len();
+  let mut result = 0;
+  let mut operator = Operator::Plus;
+  'cur: while index < len {
+    match &expression[index][..] {
+      "*" => {
+        index += 1;
+        operator = Operator::Multiple;
+      },
+      "+" => {
+        index += 1;
+        operator = Operator::Plus;
+      },
+      ")" => {
+        index += 1;
+        break 'cur;
+      },
+      "(" => {
+        index += 1;
+        let sub_result = traverse(&expression, index);
+        index = sub_result.1;
+        result = operate(result, sub_result.0, &operator);
+      }
+      x => {
+        match x.parse::<usize>() {
+          Ok(num) => {
+            result = operate(result, num, &operator);
+            index += 1;
+          },
+          Err(e) => eprintln!("{:?}", e)
+        }
+      }
+    }
+  }
+  (result, index)
+}
+
+fn get_expression(text: &str) -> Vec<String> {
+  let text = text.replace(" ", "");
+  text.split("").filter_map(|x| if x == "" { None } else { Some(x.to_string()) }).collect()
+}
+
+fn main() {
+  let data = get_str_array_from_file(&vec!{"aoc2020", "data", "18.txt"});
+  let expressions: Vec<Vec<String>> = data.iter().map(|l| get_expression(l)).collect();
+  let sum_of_results: usize = expressions.iter().map(|exp| traverse(exp, 0).0).sum();
+  println!("Part 1: {}", sum_of_results);
+}
