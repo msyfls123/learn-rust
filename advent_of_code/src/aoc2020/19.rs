@@ -1,7 +1,7 @@
 extern crate regex;
 #[macro_use] extern crate lazy_static;
 
-use advent_of_code::get_str_array_from_file;
+use advent_of_code::{get_group_str_from_file};
 use regex::Regex;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -84,14 +84,17 @@ fn get_rule_letters(
 }
 
 fn main() {
-  let data = get_str_array_from_file(&vec!{"aoc2020", "data", "19.txt"});
+  let data = get_group_str_from_file(&vec!{"aoc2020", "data", "19.txt"});
+  let raw_rules = &data[0];
+  let messages = &data[1];
   let mut rule_map: RuleMap = HashMap::new();
-  data.iter().for_each(|line| {
+  raw_rules.iter().for_each(|line| {
     let (index, rule) = get_rule(line);
     rule_map.insert(index, rule);
   });
-  println!("{:?}", rule_map);
+  // println!("{:?}", rule_map);
   let cached: Rc<RefCell<CachedRuleLettersMap>> = Rc::new(RefCell::new(HashMap::new()));
   let rule_letters = get_rule_letters(&rule_map, cached.clone(), 0);
-  println!("cached {:?}", cached.clone());
+  let matched_message_count = messages.iter().filter(|m| rule_letters.contains(m)).count();
+  println!("Part 1: {:?}", matched_message_count);
 }
