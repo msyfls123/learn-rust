@@ -5,6 +5,7 @@ use std::io::prelude::*;
 use itertools::Itertools;
 
 pub mod aoc2017;
+pub mod geometry;
 
 pub fn get_str_from_file(path_list: &Vec<&str>) -> String {
   let path = path_list.iter().fold(
