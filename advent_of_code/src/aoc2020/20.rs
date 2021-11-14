@@ -26,15 +26,15 @@ impl Tile {
       l.as_ref().chars().map(|c| c == '#').collect()
     }).collect();
     let len = matrix.len();
-    let horiz_borders: Vec<Border> = [0, len-1].iter().map(|&y| {
-      (0..len).map(|x| matrix[y][x]).collect::<Border>()
-    }).collect();
-    let vert_borders: Vec<Border> = [0, len-1].iter().map(|&x| {
-      (0..len).map(|y| matrix[y][x]).collect::<Border>()
-    }).collect();
+    let (top, bottom): (Border, Border) = (0..len).map(|x| {
+      (matrix[0][x], matrix[len - 1][x])
+    }).unzip();
+    let (left, right): (Border, Border) = (0..len).map(|y| {
+      (matrix[y][0], matrix[y][len - 1])
+    }).unzip();
     Tile {
       id,
-      borders: [horiz_borders, vert_borders].concat()
+      borders: vec!{top, right, bottom, left}
     }
   }
 
