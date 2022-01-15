@@ -2,11 +2,23 @@ extern crate regex;
 #[macro_use] extern crate lazy_static;
 
 use std::collections::HashMap;
+use std::str::Chars;
 use std::fmt;
 use advent_of_code::get_group_str_from_file;
-use itertools::Itertools;
 use regex::Regex;
 use advent_of_code::geometry::{clockwise, flip, FlipAxis};
+
+const MONSTER: &str = r"
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+";
+
+struct MonsterFilter {
+  len_x: usize,
+  len_y: usize,
+  pattern: Vec<(usize, usize)>, 
+}
 
 type Border = Vec<bool>;
 type TileId = usize;
@@ -47,9 +59,12 @@ fn fmt_border(border: &Border) -> String {
 
 impl fmt::Display for Tile {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    writeln!(f, "Tile {} :", self.id);
+    writeln!(f, "Tile {} :", self.id)?;
     self.matrix.iter().for_each(|line| {
-      writeln!(f, "{}", line.iter().map(|&v| if v { '#' } else { '.' }).collect::<String>());
+      match writeln!(f, "{}", line.iter().map(|&v| if v { '#' } else { '.' }).collect::<String>()) {
+        Ok(_) => {},
+        Err(_) => {},
+      }
     });
     write!(f, "========")
   }
@@ -57,8 +72,8 @@ impl fmt::Display for Tile {
 
 impl fmt::Debug for Adjacent {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    writeln!(f, "Adjacent {}", self.tile_id);
-    writeln!(f, "border {}", fmt_border(&self.border));
+    writeln!(f, "Adjacent {}", self.tile_id)?;
+    writeln!(f, "border {}", fmt_border(&self.border))?;
     write!(f, "========")
   }
 }
@@ -78,6 +93,10 @@ impl Tile {
       id,
       matrix,
     }
+  }
+
+  fn from_matrix(matrix: Vec<Vec<bool>>) -> Self {
+    Tile { id: 0, matrix }
   }
 
   fn clockwise(&mut self, opposite: bool) {
@@ -100,6 +119,75 @@ impl Tile {
     }
     println!("{} {:?} {:?}", self, edge, border);
     panic!("not found");
+  }
+
+  fn tweak_for_most_monsters(&mut self) -> (usize, usize) {
+    let mut count = 0;
+    for _ in 0..4 {
+      self.clockwise(false);
+      let tmp = self.get_monster_count();
+      if tmp > count {
+        count = tmp;
+      }
+    }
+    self.flip();
+    for _ in 0..4 {
+      self.clockwise(false);
+      let tmp = self.get_monster_count();
+      if tmp > count {
+        count = tmp;
+      }
+    }
+    (count, self.get_monster_filter().pattern.len())
+  }
+
+  fn count_number_sign(&self) -> usize {
+    self.matrix.iter().fold(0, |acc, row| {
+      acc + row.iter().filter(|&x| *x).count()
+    })
+  }
+
+  fn get_monster_filter(&self) -> MonsterFilter {
+    let monster: Vec<Vec<bool>> = MONSTER.lines()
+      .filter_map(|x| {
+        if x == "" {
+          None
+        } else {
+          Some(x)
+        }
+      })
+      .map(|l| {
+        l.chars().map(|c| c == '#').collect()
+      }).collect();
+    let m_y_len = monster.len();
+    let m_x_len = monster[0].len();
+    let monster_pattern: Vec<(usize, usize)> = monster.iter().enumerate().flat_map(|(y, row)| {
+      row.iter().enumerate().filter_map(move |(x, v)| {
+        if *v {
+          Some((y, x))
+        } else {
+          None
+        }
+      })
+    }).collect();
+    MonsterFilter {
+      len_x: m_x_len,
+      len_y: m_y_len,
+      pattern: monster_pattern,
+    }
+  }
+
+  fn get_monster_count(&self) -> usize {
+    let filter = self.get_monster_filter();
+    let y_len = self.matrix.len() - filter.len_y + 1;
+    let x_len = self.matrix[0].len() - filter.len_x + 1;
+    (0..y_len).fold(0, |acc, y| {
+      acc + (0..x_len).filter(|x| {
+        filter.pattern.iter().all(|(my, mx)| {
+          self.matrix[y + my][x + mx]
+        })
+      }).count()
+    })
   }
 
   fn borders(&self) -> Vec<Border> {
@@ -192,7 +280,6 @@ fn tweak_0x0(tile: &mut Tile, adjacent_map: &AdjacentMap) -> (TileId, Border) {
       tile.clockwise(false);
     },
     (1, 2) => {
-      println!("ok");
     },
     (2, 3) => {
       tile.clockwise(true);
@@ -272,7 +359,7 @@ fn collect_tiles(
             },
             None => {
               // last one
-              println!("last one");
+              // println!("last one");
             }
           };
         }
@@ -281,6 +368,24 @@ fn collect_tiles(
   }
   
   image
+}
+
+fn form_actual_image(raw_image: TileImage, tile_map: &TileMap) -> Tile {
+  let y_len = raw_image.len();
+  let x_len = raw_image[0].len();
+  let tile_len = tile_map.get(&raw_image[0][0]).unwrap().matrix.len() - 2;
+  let mut image = vec![vec![false; x_len * tile_len]; y_len * tile_len];
+  raw_image.iter().enumerate().for_each(|(y, row)| {
+    row.iter().enumerate().for_each(|(x, tile_id)| {
+      let tile = tile_map.get(tile_id).unwrap();
+      tile.matrix[1..1 + tile_len].iter().enumerate().for_each(|(tile_y, tile_row)| {
+        tile_row[1..1 + tile_len].iter().enumerate().for_each(|(tile_x, value)| {
+          image[y * tile_len + tile_y][x * tile_len + tile_x] = *value;
+        })
+      })
+    })
+  });
+  Tile::from_matrix(image)
 }
 
 fn main() {
@@ -293,7 +398,10 @@ fn main() {
     .map(|(&key, _value)| key).collect();
   println!("Part 1: {}", &corners.iter().fold(1, |acc, v| acc * v));
 
-  println!("Corners: {:?}", corners);
-  let image = collect_tiles(&mut tile_map, &corners, &adjacent_map);
-  println!("{:?}", image);
+  let raw_image = collect_tiles(&mut tile_map, &corners, &adjacent_map);
+  let mut image = form_actual_image(raw_image, &tile_map);
+  let (monster_count, monster_len) = image.tweak_for_most_monsters();
+  let monster_parts = monster_count * monster_len;
+  println!("monster {}", monster_count);
+  println!("Part 2: {}", image.count_number_sign() - &monster_parts);
 }
