@@ -7,13 +7,22 @@ use regex::Regex;
 
 type Border = Vec<bool>;
 
+type TileId = usize;
+
 #[derive(Debug)]
 struct Tile {
-  id: usize,
-  borders: Vec<Border>
+  id: TileId,
+  borders: Vec<Border>,
+  matrix: Vec<Border>,
 }
 
-type AdjacentMap = HashMap<usize, usize>;
+#[derive(Debug)]
+struct Adjacent {
+  tile_id: TileId,
+  border: Border,
+}
+
+type AdjacentMap = HashMap<TileId, Vec<Adjacent>>;
 
 impl Tile {
   fn from_texts<T: AsRef<str>>(texts: &[T]) -> Self {
@@ -34,19 +43,24 @@ impl Tile {
     }).unzip();
     Tile {
       id,
+      matrix,
       borders: vec!{top, right, bottom, left}
     }
   }
 
-  fn adjacent(&self, other: &Self) -> bool {
-    self.borders.iter().any(|border| {
-      other.borders.iter().any(|other_border| {
+  fn adjacent(&self, other: &Self) -> Option<Border> {
+    self.borders.iter().find_map(|border| {
+      other.borders.iter().find_map(|other_border| {
         if border == other_border {
-          true
+          Some(border.to_owned())
         } else {
           let mut rev_border = border.clone();
           rev_border.reverse();
-          &rev_border == other_border
+          if &rev_border == other_border {
+            Some(border.to_owned())
+          } else {
+            None
+          }
         }
       })
     })
@@ -56,14 +70,27 @@ impl Tile {
 fn main() {
   let data = get_group_str_from_file(&vec!{"aoc2020", "data", "20.txt"});
   let tiles: Vec<Tile> = data.iter().map(|g| Tile::from_texts(g)).collect();
-  let mut map: AdjacentMap = HashMap::new();
+  let tile_map: HashMap<_, _> = tiles.iter().map(|t| (t.id, t)).collect();
+  let mut adjacent_map: AdjacentMap = HashMap::new();
   tiles.iter().enumerate().for_each(|(index, tile)| {
-    let entry = map.entry(tile.id).or_insert(0);
-    *entry += tiles.iter().filter(|other| {
-      tile.id != other.id && tile.adjacent(other)
-    }).count();
+    let entry = adjacent_map.entry(tile.id).or_insert(vec!{});
+    let mut adjacent_tiles = tiles.iter().filter_map(|other| {
+      if tile.id != other.id {
+        match tile.adjacent(other) {
+          Some(border) => Some(Adjacent {
+            tile_id: other.id,
+            border
+          }),
+          None => None
+        }
+      } else {
+        None
+      }
+    }).collect();
+    entry.append(&mut adjacent_tiles);
   });
-  let corners: Vec<usize> = map.iter().filter(|&(_key, &value)| value == 2)
-    .map(|(key, _value)| *key).collect();
+  let corner_adjacents = adjacent_map.iter().filter(|(_key, value)| &value.len() == &2).collect::<Vec<_>>();
+  let corners: Vec<usize> = corner_adjacents.iter()
+    .map(|(&key, _value)| key).collect();
   println!("Part 1: {}", &corners.iter().fold(1, |acc, v| acc * v));
 }
