@@ -4,6 +4,7 @@ extern crate regex;
 use std::collections::HashMap;
 use advent_of_code::get_group_str_from_file;
 use regex::Regex;
+use advent_of_code::geometry::{clockwise, flip, FlipAxis};
 
 type Border = Vec<bool>;
 
@@ -67,12 +68,9 @@ impl Tile {
   }
 }
 
-fn main() {
-  let data = get_group_str_from_file(&vec!{"aoc2020", "data", "20.txt"});
-  let tiles: Vec<Tile> = data.iter().map(|g| Tile::from_texts(g)).collect();
-  let tile_map: HashMap<_, _> = tiles.iter().map(|t| (t.id, t)).collect();
+fn get_adjacent_map(tiles: &Vec<Tile>) -> AdjacentMap {
   let mut adjacent_map: AdjacentMap = HashMap::new();
-  tiles.iter().enumerate().for_each(|(index, tile)| {
+  tiles.iter().for_each(|tile| {
     let entry = adjacent_map.entry(tile.id).or_insert(vec!{});
     let mut adjacent_tiles = tiles.iter().filter_map(|other| {
       if tile.id != other.id {
@@ -89,6 +87,14 @@ fn main() {
     }).collect();
     entry.append(&mut adjacent_tiles);
   });
+  adjacent_map
+}
+
+fn main() {
+  let data = get_group_str_from_file(&vec!{"aoc2020", "data", "20.txt"});
+  let tiles: Vec<Tile> = data.iter().map(|g| Tile::from_texts(g)).collect();
+  let tile_map: HashMap<_, _> = tiles.iter().map(|t| (t.id, t)).collect();
+  let mut adjacent_map = get_adjacent_map(&tiles);
   let corner_adjacents = adjacent_map.iter().filter(|(_key, value)| &value.len() == &2).collect::<Vec<_>>();
   let corners: Vec<usize> = corner_adjacents.iter()
     .map(|(&key, _value)| key).collect();
