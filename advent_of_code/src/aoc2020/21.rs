@@ -3,11 +3,18 @@ extern crate regex;
 
 use std::collections::{HashMap, HashSet};
 use advent_of_code::get_str_array_from_file;
+use itertools::Itertools;
 use regex::{ Regex };
 use std::iter::FromIterator;
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+struct DangerousIngredient {
+    ingredient: String,
+    allergen: String,
+}
+
 type AllergenIngredientsMap = HashMap<String, HashSet<String>>;
-type Ingredients = HashSet<String>;
+type Ingredients = HashSet<DangerousIngredient>;
 
 #[derive(Debug)]
 struct Food {
@@ -40,7 +47,10 @@ fn reduce_susense_ingredients(
     if only_child_allergens.is_empty() { return; }
     for (key, item) in only_child_allergens {
         suspense_map.remove(&key);
-        convinced_ingredients.insert(item.to_owned());
+        convinced_ingredients.insert(DangerousIngredient {
+            ingredient: item.to_owned(),
+            allergen: key.to_owned(),
+        });
         let allergens = suspense_map.keys().map(|v| v.to_owned()).collect::<Vec<String>>();
         allergens.iter().for_each(|allergen| {
             let mut entry = suspense_map.entry(allergen.to_owned()).or_default();
@@ -72,7 +82,7 @@ fn count_innocence_ingredients(
 ) -> usize {
     foods.iter().map(|Food { ingredients, .. }| {
         ingredients.iter().filter(|&ingredient| {
-            !guilty_ingredients.contains(ingredient)
+            guilty_ingredients.into_iter().find(|&x| &x.ingredient == ingredient).is_none()
         }).count()
     }).sum()
 }
@@ -85,8 +95,12 @@ fn main() {
     let mut convinced_ingredients = HashSet::new();
     let mut suspense_ingredient_map = map.clone();
     reduce_susense_ingredients(&mut suspense_ingredient_map, &mut convinced_ingredients);
-    let all_suspense_ingredients = suspense_ingredient_map.values().flatten().map(|v| v.to_owned());
-    let all_guilty_ingredients: Ingredients = HashSet::from_iter(all_suspense_ingredients.chain(convinced_ingredients));
+    let all_guilty_ingredients: Ingredients = HashSet::from_iter(convinced_ingredients.clone());
     let innocence_ingredients_count = count_innocence_ingredients(&foods, &all_guilty_ingredients);
     println!("Part 1: {}", innocence_ingredients_count);
+
+    let mut canonical_dangerous_ingredient_list: Vec<DangerousIngredient> = convinced_ingredients.into_iter().collect();
+    canonical_dangerous_ingredient_list.sort_by_key(|x| x.allergen.to_owned());
+    let dangerous_list_text = canonical_dangerous_ingredient_list.iter().map(|x| x.ingredient.to_owned()).join(",");
+    println!("Part 2: {}", dangerous_list_text);
 }
