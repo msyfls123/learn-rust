@@ -1,82 +1,80 @@
-#![feature(linked_list_cursors)]
-use std::{collections::{LinkedList, linked_list::{CursorMut}}, iter::FromIterator};
+use std::{collections::HashMap};
 
+use itertools::Itertools;
 
-fn move_cursor<T>(cursor: &mut CursorMut<T>, next: bool) {
-  if next {
-    cursor.move_next();
-  } else {
-    cursor.move_prev();
-  }
-  match cursor.current() {
-    Some(_) => (),
-    None => {
-      if next {
-        cursor.move_next();
-      } else {
-        cursor.move_prev();
-      }
+type CupMap = HashMap<usize, usize>;
+
+static LAELING: [usize; 9] = [5, 6, 2, 8, 9, 3, 1, 4, 7];
+// static LAELING: [usize; 9] = [3, 8, 9, 1, 2, 5, 4, 6, 7];
+
+fn get_following_cups(cup_map: &CupMap, current: usize, num: usize) -> Vec<usize> {
+  (0..num).fold(vec!{}, |mut acc: Vec<usize>, _| {
+    let this = if acc.len() > 0 {
+      acc.last().unwrap().to_owned()
+    } else {
+      current
+    };
+    acc.push(cup_map.get(&this).unwrap().to_owned());
+    acc
+  })
+}
+
+fn move_round(cup_map: &mut CupMap, current: usize, total: usize) -> usize {
+  let picked_cups = (0..3).fold(vec!{}, |mut acc: Vec<usize>, _| {
+    let this = if acc.len() > 0 {
+      acc.last().unwrap().to_owned()
+    } else {
+      current
+    };
+    acc.push(cup_map.get(&this).unwrap().to_owned());
+    acc
+  });
+  let next_cup = *cup_map.get(picked_cups.last().unwrap()).unwrap();
+  cup_map.insert(current, next_cup);
+
+  let destination_cup = (1..).map(|v| {
+    if current > v {
+      current - v
+    } else {
+      total - (v - current)
     }
-  }
+  }).filter(|x| !picked_cups.contains(x)).next().unwrap();
+  let next_cup = cup_map.get(&destination_cup).unwrap().to_owned();
+  cup_map.insert(destination_cup, *picked_cups.first().unwrap());
+  cup_map.insert(*picked_cups.last().unwrap(), next_cup);
+  
+  *cup_map.get(&current).unwrap()
 }
 
-fn find_destination_cup(picked_cups: &Vec<usize>, target: usize) -> usize {
-  let mut available = Vec::from_iter((1..=9));
-  available.retain(|v| !picked_cups.contains(v));
-  available.sort();
-  available.reverse();
-  match available.iter().find(|&v| *v < target) {
-    Some(&label) => label,
-    None => available[0]
-  }
-}
-
-fn safe_get_current<T: ToOwned<Owned = T>>(cursor: &mut CursorMut<T>, should_remove: bool) -> T {
-  match cursor.current() {
-    Some(_) => {
-      if should_remove {
-        cursor.remove_current().unwrap().to_owned()
-      } else {
-        cursor.current().unwrap().to_owned()
-      }
-    },
-    None => {
-      move_cursor(cursor, true);
-      safe_get_current(cursor, should_remove)
+fn play(total: usize, moves: usize) -> CupMap {
+  let mut cup_map = HashMap::new();
+  let mut current = LAELING[0];
+  let cups: Vec<usize> = (1..=total).map(|num| {
+    if num <= LAELING.len() {
+      LAELING[num - 1]
+    } else {
+      num
     }
-  }
-}
-
-fn move_cursor_to_target<T: Eq + ToOwned<Owned = T>>(cursor: &mut CursorMut<T>, target: T) {
-  while safe_get_current(cursor, false) != target {
-      move_cursor(cursor, true);
-  }
-}
-
-fn round(mut cursor: &mut CursorMut<usize>) {
-  let current_cup = cursor.current().unwrap().to_owned();
-  move_cursor(&mut cursor, true);
-  let picked_cups: Vec<usize> = (0..3).map(|_x| {
-    safe_get_current(&mut cursor, true)
   }).collect();
-  let next_cup = safe_get_current(&mut cursor, false);
-  let destination_cup = find_destination_cup(&picked_cups, current_cup);
-  move_cursor_to_target(&mut cursor, destination_cup);
-  cursor.splice_after(LinkedList::from_iter(picked_cups.iter().map(|v| v.to_owned())));
-  move_cursor_to_target(&mut cursor, next_cup);
-  // println!("picked: {:?}, current: {}, dest: {}, next: {}", picked_cups, current_cup, destination_cup, next_cup);
+  cups.iter().enumerate().for_each(|(index, &cup)| {
+    let next_value = cups[(index + 1) % total];
+    cup_map.insert(cup, next_value);
+  });
+
+  for i in 0..moves {
+    if i % 100000 == 0 {
+      println!("Round {}", i + 1); 
+    }
+    current = move_round(&mut cup_map, current, total)
+  }
+  cup_map
 }
 
 fn main() {
-  let mut list = LinkedList::from([5, 6, 2, 8, 9, 3, 1, 4, 7]);
-  let mut cursor = list.cursor_front_mut();
-  for _ in 0..100 {
-      round(&mut cursor)
-  }
-  move_cursor_to_target(&mut cursor, 1);
-  let result1 = (0..8).map(|_| {
-    move_cursor(&mut cursor, true);
-    safe_get_current(&mut cursor, false).to_string()
-  }).collect::<Vec<String>>().join("");
+  let map1 = play(9, 100);
+  let result1 = get_following_cups(&map1, 1, 8).iter().map(|x| x.to_string()).collect_vec().join("");
   println!("Part 1: {}", result1);
+  let map2 = play(1_000_000, 10_000_000);
+  let result2 = get_following_cups(&map2, 1, 2);
+  println!("Part 2: {}", result2[0] * result2[1]);
 }
