@@ -7,13 +7,11 @@ default-run = "main"
 [workspace]
 members = [
     "./",
-    "gui",
     "advent_of_code",
     "exercises",
 ]
 default-members = [
     "./",
-    "gui",
     "advent_of_code",
     "exercises",
 ]
