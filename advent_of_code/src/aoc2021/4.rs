@@ -3,6 +3,7 @@ use itertools::Itertools;
 
 type Board = Vec<Vec<usize>>;
 
+#[derive(Clone)]
 struct Winner {
   board: Board,
   unmarked: Vec<usize>,
@@ -54,4 +55,21 @@ fn main() {
   }).unwrap();
   let score = winner.unmarked.iter().sum::<usize>() * num;
   println!("Part 1: {}", score);
+
+  let mut flex_boards = boards.to_owned();
+  let (winner, num) = (0..numbers.len()).find_map(|i| {
+    let drawn = numbers.iter().take(i + 1).collect_vec();
+    let option_winners = flex_boards.iter().filter_map(|board| check_winner(board, &drawn)).collect_vec();
+    let option_boards = option_winners.to_owned().iter().map(|w| w.board.to_owned()).collect_vec();
+
+    flex_boards.retain(|x| !option_boards.contains(x));
+    if flex_boards.len() == 0 {
+      let winner = option_winners.last().unwrap().to_owned();
+      Some((winner, numbers[i]))
+    } else {
+      None
+    }
+  }).unwrap();
+  let score = winner.unmarked.iter().sum::<usize>() * num;
+  println!("Part 2: {}", score);
 }
