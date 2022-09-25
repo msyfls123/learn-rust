@@ -44,12 +44,13 @@ fn get_line(text: &str) -> Line {
   }
 }
 
-fn get_orthogonal_diagram(lines: &Vec<Line>) -> Diagram {
+fn get_diagram(lines: &Vec<Line>, include_diagoal: bool) -> Diagram {
   let mut diagram: Diagram = HashMap::new();
-  lines.iter().filter(|l| l.is_orthogonal).for_each(|l| {
+  lines.iter().filter(|l| include_diagoal || l.is_orthogonal).for_each(|l| {
     (0..)
       .map(|count| (l.start.0 + l.step.0 * count, l.start.1 + l.step.1 * count))
       .take_while(|point| {
+        // next point
         point != &(l.end.0 + l.step.0, l.end.1 + l.step.1)
       })
       .for_each(|point| {
@@ -64,7 +65,10 @@ fn main() {
   let data = get_str_array_from_file(&vec!{"aoc2021", "data", "5.txt"});
   let lines = data.iter().map(|t| get_line(t)).collect_vec();
   // println!("{:?}", lines);
-  let orthogonal_diagram = get_orthogonal_diagram(&lines);
+  let orthogonal_diagram = get_diagram(&lines, false);
   let overlapping_points_count = orthogonal_diagram.values().filter(|&v| v > &1).count();
   println!("Part 1: {}", overlapping_points_count);
+  let full_diagram = get_diagram(&lines, true);
+  let overlapping_points_count = full_diagram.values().filter(|&v| v > &1).count();
+  println!("Part 2: {}", overlapping_points_count);
 }
