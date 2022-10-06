@@ -41,4 +41,9 @@ fn main() {
   });
   let lanternfish_count: usize = fish_map.values().sum();
   println!("Part 1: {}", lanternfish_count);
+  (0..256 - 80).for_each(|_| {
+    fish_map = spawn_fish_map(&fish_map);
+  });
+  let lanternfish_count: usize = fish_map.values().sum();
+  println!("Part 2: {}", lanternfish_count);
 }
