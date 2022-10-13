@@ -19,6 +19,13 @@ fn calc_fuel_cost(positions: &Positions, crab: usize) -> usize {
   positions.iter().map(|(value, count)| count * value.abs_diff(crab)).sum()
 }
 
+fn calc_fuel_seq_cost(positions: &Positions, crab: usize) -> usize {
+  positions.iter().map(|(value, count)| {
+    let diff = value.abs_diff(crab);
+    count * (diff + 1) * diff / 2
+  }).sum()
+}
+
 fn main() {
   let data: Vec<usize> = get_str_array_from_file(&vec!{"aoc2021", "data", "7.txt"})[0]
     .split(",")
@@ -36,4 +43,9 @@ fn main() {
     .map(|crab| (crab, calc_fuel_cost(&positions, crab)))
     .min_by_key(|&(_, cost)| cost);
   println!("Part 1: {:?}", cheapest_outcome);
+
+  let least_fuel = (min..max)
+    .map(|crab| (crab, calc_fuel_seq_cost(&positions, crab)))
+    .min_by_key(|&(_, cost)| cost);
+  println!("Part 2: {:?}", least_fuel);
 }
