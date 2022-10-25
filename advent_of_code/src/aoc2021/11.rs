@@ -108,9 +108,17 @@ fn step(map: &mut OctopusMap) -> usize {
 fn main() {
   let lines = get_str_array_from_file(&vec!{"aoc2021", "data", "11.txt"});
   let mut map = get_octopus_map(&(lines.iter().map(|v| v.as_str()).collect()));
+  let mut map2 = map.clone();
+  let map_size = map.len();
   let mut flash_total = 0;
   for _ in 0..100 {
     flash_total += step(&mut map)
   }
   println!("Part 1: {}", flash_total);
+
+  let synchronizing_step = (1..).find(|i| {
+    step(&mut map2) == map_size
+  });
+
+  println!("Part 2: {:?}", synchronizing_step);
 }
