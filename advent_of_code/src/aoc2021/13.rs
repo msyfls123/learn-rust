@@ -84,6 +84,25 @@ fn test_fold() {
   assert_eq!(new_paper.len(), 17);
 }
 
+fn print_paper(paper: &Paper) {
+  let x_list: Vec<isize> = paper.iter().map(|(x, _)| *x).collect();
+  let y_list: Vec<isize> = paper.iter().map(|(_, y,)| *y).collect();
+  let x_min = x_list.iter().min().unwrap().to_owned();
+  let x_max = x_list.iter().max().unwrap().to_owned();
+  let y_min = y_list.iter().min().unwrap().to_owned();
+  let y_max = y_list.iter().max().unwrap().to_owned();
+  (y_min..=y_max).for_each(|y| {
+    (x_min..=x_max).for_each(|x| {
+      if paper.contains(&(x, y)) {
+        print!("#");
+      } else {
+        print!(".");
+      }
+    });
+    println!("");
+  });
+}
+
 fn main() {
   let group_lines = get_group_str_from_file(&vec!{"aoc2021", "data", "13.txt"});
   let paper = get_paper(&group_lines[0]);
@@ -91,4 +110,10 @@ fn main() {
 
   let first_fold_paper = fold(&paper, &fold_instructions[0]);
   println!("Part 1: {}", first_fold_paper.len());
+
+  let fold_paper = fold_instructions.iter().fold(paper, |acc, instruction| {
+    fold(&acc, &instruction)
+  });
+  println!("Part 2:");
+  print_paper(&fold_paper);
 }
