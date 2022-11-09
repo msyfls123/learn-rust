@@ -308,3 +308,7 @@ path = "src/aoc2021/14.rs"
 [[bin]]
 name = "2021-15"
 path = "src/aoc2021/15.rs"
+
+[[bin]]
+name = "2021-16"
+path = "src/aoc2021/16.rs"
