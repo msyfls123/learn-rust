@@ -1,8 +1,8 @@
 target/
 dist/
 node_modules/
-.vscode/
 
+**/.vscode/launch.json
 **/*.rs.bk
 **/.DS_Store
 Cargo.lock

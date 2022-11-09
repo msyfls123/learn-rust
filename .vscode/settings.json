@@ -1,0 +1,6 @@
+{
+  "rust-analyzer.files.excludeDirs": [
+    "advent_of_code/src/aoc2017",
+    "advent_of_code/src/aoc2018"
+  ]
+}
