@@ -1,4 +1,4 @@
-use std::{convert::TryInto, slice::Chunks};
+use std::{convert::TryInto, slice::Chunks, fmt::Debug};
 
 use advent_of_code::get_str_from_file;
 use itertools::Itertools;
@@ -42,8 +42,8 @@ fn test_hex_to_bits() {
 }
 
 fn parse_chars_to_int<T>(chars: &T) -> usize
-where T: IntoIterator<Item = char> + ?Sized + Clone, {
-  usize::from_str_radix(&chars.clone().into_iter().collect::<String>(), 2).unwrap()
+where T: IntoIterator<Item = char> + ?Sized + Clone + Debug, {
+  usize::from_str_radix(&chars.clone().into_iter().collect::<String>(), 2).expect(&format!("{:?}", chars))
 }
 
 fn parse_packet(text: &str) -> Packet {
@@ -149,9 +149,59 @@ fn get_version_count_of_packet(p: &Packet) -> usize {
   }
 }
 
+fn calc_listeral(l: &Literal) -> usize {
+  usize::from_str_radix(&l.bits.iter().flatten().collect::<String>(), 2).unwrap()
+}
+
+fn calc_operator(op: &Operator) -> usize {
+  match op.type_id {
+    0 => op.sub_packets.iter().map(|sp| calc_packet(sp)).sum(),
+    1 => op.sub_packets.iter().fold(1, |acc, sp| acc * calc_packet(sp)),
+    2 => op.sub_packets.iter().map(|sp| calc_packet(sp)).min().unwrap(),
+    3 => op.sub_packets.iter().map(|sp| calc_packet(sp)).max().unwrap(),
+    5 => {
+      let first = calc_packet(&op.sub_packets[0]);
+      let second = calc_packet(&op.sub_packets[1]);
+      if first > second { 1 } else { 0 }
+    },
+    6 => {
+      let first = calc_packet(&op.sub_packets[0]);
+      let second = calc_packet(&op.sub_packets[1]);
+      if first < second { 1 } else { 0 }
+    },
+    7 => {
+      let first = calc_packet(&op.sub_packets[0]);
+      let second = calc_packet(&op.sub_packets[1]);
+      if first == second { 1 } else { 0 }
+    },
+    _ => panic!("unknown expression")
+  }
+}
+
+fn calc_packet(packet: &Packet) -> usize {
+  match packet {
+    Packet::Literal(l) => calc_listeral(l),
+    Packet::Operator(op) => calc_operator(op)
+  }
+}
+
+#[test]
+fn test_calc_packet() {
+  let hex_to_packet = |text| parse_packet(&hex_to_bits(text));
+  assert_eq!(calc_packet(&hex_to_packet("C200B40A82")), 3);
+  assert_eq!(calc_packet(&hex_to_packet("04005AC33890")), 54);
+  assert_eq!(calc_packet(&hex_to_packet("880086C3E88112")), 7);
+  assert_eq!(calc_packet(&hex_to_packet("CE00C43D881120")), 9);
+  assert_eq!(calc_packet(&hex_to_packet("D8005AC2A8F0")), 1);
+  assert_eq!(calc_packet(&hex_to_packet("F600BC2D8F")), 0);
+  assert_eq!(calc_packet(&hex_to_packet("9C005AC2F8F0")), 0);
+  assert_eq!(calc_packet(&hex_to_packet("9C0141080250320F1802104A08")), 1);
+}
+
 fn main() {
   let data = get_str_from_file(&vec!{"aoc2021", "data", "16.txt"});
   let text = hex_to_bits(&data);
   let packet = parse_packet(&text);
-  println!("{}", get_version_count_of_packet(&packet));
+  println!("Part 1: {}", get_version_count_of_packet(&packet));
+  println!("Part 2: {}", calc_packet(&packet));
 }
