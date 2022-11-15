@@ -141,7 +141,7 @@ fn main() {
 
   let most_frequently_asleep_guard = map.keys().map(|k| {
     let values = map.get(k).unwrap();
-    let max_pair = values.iter().enumerate().max_by_key(|(_, x)| x.clone()).unwrap();
+    let max_pair = values.iter().enumerate().max_by_key(|(_, &x)| x.to_owned()).unwrap();
     (k, max_pair)
   }).max_by_key(|x| x.1.1).unwrap();
   let most_frequently_asleep_minute: u32 = most_frequently_asleep_guard.1.0.try_into().unwrap();
