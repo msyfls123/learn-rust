@@ -1,4 +1,4 @@
-use virtual_dom_rs::prelude::*;
+use percy_dom::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys;
 use wasm::{App, Store};
@@ -6,7 +6,7 @@ use wasm::{App, Store};
 #[wasm_bindgen]
 pub struct Client {
     app: App,
-    dom_updater: DomUpdater,
+    pdom: PercyDom,
 }
 
 #[wasm_bindgen]
@@ -18,12 +18,12 @@ impl Client {
         let document = window.document().unwrap();
         let root_node = document.get_element_by_id("wasm-app")
           .unwrap();
-        let dom_updater = DomUpdater::new_replace_mount(app.render(), root_node);
-        Client { app, dom_updater }
+        let pdom = PercyDom::new_replace_mount(app.render(), root_node);
+        Client { app, pdom }
     }
 
     pub fn render(&mut self) {
         let vdom = self.app.render();
-        self.dom_updater.update(vdom);
+        self.pdom.update(vdom);
     }
 }

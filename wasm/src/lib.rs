@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 use web_sys;
 
 use css_rs_macro::css;
-use virtual_dom_rs::prelude::*;
+use percy_dom::prelude::*;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -75,7 +75,7 @@ impl View for HomeView {
 
             <button
               class=MY_COMPONENT_CSS
-              onclick=move |_event: web_sys::Event| {
+              onclick=move |_event| {
                 web_sys::console::log_1(&"Button Clicked!".into());
                 store.borrow_mut().increment_click();
               }
