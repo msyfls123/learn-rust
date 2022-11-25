@@ -1,5 +1,6 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc, cell::RefCell, fmt::Display};
 
+use advent_of_code::get_str_array_from_file;
 use itertools::Itertools;
 use serde_json::Value;
 
@@ -9,18 +10,32 @@ enum Node {
   Number(Rc<RefCell<usize>>),
 }
 
+impl Display for Node {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+        Self::Number(num) => {
+          write!(f, "{}", num.borrow())
+        },
+        Self::Pair(snailfish) => {
+          write!(f, "[{},{}]", *snailfish.borrow().left.borrow(), *snailfish.borrow().right.borrow())
+        }
+      }
+  }
+}
+
 #[derive(Debug)]
 struct SnailFish {
   left: RefCell<Node>,
   right: RefCell<Node>,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum WalkAction {
   Continue,
   Break,
   Add(usize),
   Explode(usize, usize),
+  Split(usize),
 }
 
 type Lucky = Option<Rc<RefCell<usize>>>;
@@ -76,18 +91,22 @@ fn get_factor(num: usize, is_down: bool) -> usize {
 fn test_get_factor() {
   assert_eq!(get_factor(11, true), 5);
   assert_eq!(get_factor(11, false), 6);
+  let v = RefCell::new(5);
+  let v_v = v.borrow().to_owned();
+  *v.borrow_mut() += v_v;
+  println!("{}", v.borrow());
 }
 
-fn walk(node: &RefCell<Node>, r_action: &WalkAction, depth: usize, r_lucky: Lucky) -> (WalkAction, Lucky) {
+fn walk(node: &RefCell<Node>, r_action: &WalkAction, depth: usize, r_lucky: Lucky, prefer_split: bool) -> (WalkAction, Lucky) {
   let mut lucky = r_lucky.clone();
   let mut action = r_action.clone();
 
   let walk_pair = |snailfish: &Rc<RefCell<SnailFish>>| {
-    (action, lucky) = walk(&snailfish.borrow().left, &action, depth + 1, lucky);
+    (action, lucky) = walk(&snailfish.borrow().left, &action, depth + 1, lucky, prefer_split);
     if action == WalkAction::Break {
-      return (action, lucky);
+      return (action, None);
     }
-    return walk(&snailfish.borrow().right, &action, depth + 1, lucky);
+    return walk(&snailfish.borrow().right, &action, depth + 1, lucky, prefer_split);
   };
   let result = match r_action {  
     WalkAction::Add(e_num) => {
@@ -99,14 +118,15 @@ fn walk(node: &RefCell<Node>, r_action: &WalkAction, depth: usize, r_lucky: Luck
         // explode to right
         Node::Number(num) => {
           *num.borrow_mut() += e_num;
-          (WalkAction::Break, r_lucky)
+          (WalkAction::Break, None)
         }
       }
     },
     WalkAction::Continue => {
       match &*node.borrow() {
         Node::Pair(snailfish) => {
-          if depth + 1 == 5 {
+          // meet explode threshold
+          if depth + 1 >= 5 {
             let (left, right) = get_pair_num(&snailfish);
             
             (WalkAction::Explode(left, right), r_lucky)
@@ -115,12 +135,18 @@ fn walk(node: &RefCell<Node>, r_action: &WalkAction, depth: usize, r_lucky: Luck
           }
         },
         Node::Number(num) => {
-          (WalkAction::Continue, Some(num.clone()))
+          let number = *num.borrow();
+          // scan explode pair first, ignore split
+          if number >= 10 && !prefer_split {
+            (WalkAction::Split(number), None)
+          } else {
+            (WalkAction::Continue, Some(num.clone()))
+          }
         }
       }
     },
     WalkAction::Break => (WalkAction::Break, None),
-    _ => panic!("unreachable action"),
+    a => panic!("unreachable action{:?}: {:?}", a, node),
   };
   match result {
     (WalkAction::Explode(left, right), l) => {
@@ -133,13 +159,67 @@ fn walk(node: &RefCell<Node>, r_action: &WalkAction, depth: usize, r_lucky: Luck
       *node.borrow_mut() = Node::Number(Rc::new(RefCell::new(0)));
       (WalkAction::Add(right), None)
     },
+    (WalkAction::Split(num), _) => {
+      let left = get_factor(num, true);
+      let right = get_factor(num, false);
+      *node.borrow_mut() = parse_snailfish(&format!("[{},{}]", left, right)).into_inner();
+      (WalkAction::Break, None)
+    },
     (a, l) => (a, l),
   }
 }
 
+fn reduce(node: &RefCell<Node>) {
+  let mut action = WalkAction::Break;
+  while action != WalkAction::Continue {
+    (action, _) = walk(&node, &WalkAction::Continue, 0, None, true);
+    if action == WalkAction::Continue {
+      (action, _) = walk(&node, &WalkAction::Continue, 0, None, false);
+    }
+    // println!("{}", node.borrow());
+  }
+}
+
+fn add(left: RefCell<Node>, right: RefCell<Node>) -> RefCell<Node> {
+  let node = RefCell::new(Node::Pair(
+    Rc::new(RefCell::new(SnailFish { left, right }))
+  ));
+  reduce(&node);
+  node
+}
+
+fn sum_list<T>(list: &Vec<T>) -> RefCell<Node>
+where
+  T: Into<String> + Clone,
+{
+  let mut node = parse_snailfish(&list.get(0).unwrap().clone().into());
+  for text in &list[1..] {
+      node = add(node, parse_snailfish(&text.clone().into()));
+  }
+  node
+}
+
+fn calc_magnitude(node: &RefCell<Node>) -> usize {
+  match &*node.borrow() {
+    Node::Number(num) => num.borrow().to_owned(),
+    Node::Pair(snailfish) => {
+      3 * calc_magnitude(&snailfish.borrow().left) +
+      2 * calc_magnitude(&snailfish.borrow().right)
+    },
+  }
+}
+
+#[test]
+fn test_calc_magnitude() {
+  assert_eq!(calc_magnitude(&parse_snailfish("[[1,2],[[3,4],5]]")), 143);
+  assert_eq!(calc_magnitude(&parse_snailfish("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")), 1384);
+  assert_eq!(calc_magnitude(&parse_snailfish("[[[[1,1],[2,2]],[3,3]],[4,4]]")), 445);
+  assert_eq!(calc_magnitude(&parse_snailfish("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")), 3488);
+}
+
 fn main() {
-  let snailfish = parse_snailfish("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]");
-  println!("{:?}\n\n", snailfish);
-  walk(&snailfish, &WalkAction::Continue, 0, None);
-  println!("{:?}", snailfish);
+  let data = get_str_array_from_file(&vec!{"aoc2021", "data", "18.txt"});
+  let node = sum_list(&data);
+  let magnitude = calc_magnitude(&node);
+  println!("Part 1: {}", magnitude);
 }
