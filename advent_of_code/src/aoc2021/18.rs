@@ -217,9 +217,33 @@ fn test_calc_magnitude() {
   assert_eq!(calc_magnitude(&parse_snailfish("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")), 3488);
 }
 
+fn calc_largest_magnitude(list: &Vec<String>) -> usize{
+  list.iter().enumerate().map(|(i, text_a)| {
+    [&list[0..i], &list[i+1..]].concat().iter().map(|text_b| calc_magnitude(&sum_list(&vec!{text_a, text_b}))).max().unwrap()
+  }).max().unwrap()
+}
+
+#[test]
+fn test_calc_largest_magnitude() {
+  let lines = r#"[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+    [[[5,[2,8]],4],[5,[[9,9],0]]]
+    [6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
+    [[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
+    [[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
+    [[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
+    [[[[5,4],[7,7]],8],[[8,3],8]]
+    [[9,3],[[9,9],[6,[4,9]]]]
+    [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
+    [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"#.lines().into_iter().map(|t| t.trim().to_string()).collect();
+  assert_eq!(calc_largest_magnitude(&lines), 3993);
+}
+
 fn main() {
   let data = get_str_array_from_file(&vec!{"aoc2021", "data", "18.txt"});
   let node = sum_list(&data);
   let magnitude = calc_magnitude(&node);
   println!("Part 1: {}", magnitude);
+
+  let largest_magnitude = calc_largest_magnitude(&data);
+  println!("Part 2: {}", largest_magnitude);
 }
