@@ -1,11 +1,26 @@
 use std::{ops::{Add, Sub}, fmt::Display, collections::{HashSet, hash_map::RandomState, HashMap}};
-use std::iter::FromIterator;
 
-use advent_of_code::{split_lines, get_group_str_from_file, get_str_array_from_file};
+use advent_of_code::{split_lines, get_group_str_from_file, get_str_array_from_file, algorithm::get_shortest_path};
+use chrono::{Local};
 use itertools::Itertools;
 
 type PointSet = HashSet<Beacon, RandomState>;
-type DistanceMap = HashMap<(Beacon, usize), PointSet>;
+type TransformMap = HashMap<Transform, PointSet>;
+
+type TransformGraph = HashMap<(usize, usize), Transform>;
+
+#[derive(Debug, Clone, Eq, Hash)]
+struct Transform {
+    orientation_index: usize,
+    relative_position: Beacon,
+}
+
+impl PartialEq for Transform {
+    fn eq(&self, other: &Self) -> bool {
+        self.orientation_index == other.orientation_index
+        && self.relative_position == other.relative_position
+    }
+}
 
 #[derive(Debug, Clone, Eq, Hash)]
 struct Beacon {
@@ -75,7 +90,7 @@ fn map_rotate_direction(point: &Beacon) -> Vec<Beacon> {
     }
 }
 
-fn map_directions(point: &Beacon) -> Vec<Beacon> {
+fn map_orientations(point: &Beacon) -> Vec<Beacon> {
     let Beacon { x, y, z } = point.to_owned();
     vec!{
         Beacon { x, y, z },
@@ -94,123 +109,89 @@ where
     }).collect()
 }
 
-fn calc_distance_map(start_points: &Vec<Beacon>, end_points: &Vec<Beacon>) -> DistanceMap {
-    let mut map: DistanceMap = HashMap::new();
+fn find_possible_transform(start_points: &Vec<Beacon>, end_points: &Vec<Beacon>) -> Option<Transform> {
+    let mut map: TransformMap = HashMap::new();
     start_points.iter().enumerate().for_each(|(i, p)| {
         end_points.iter().for_each(|next_p| {
-            map_directions(p).iter().map(|cp| {
+            map_orientations(p).iter().map(|cp| {
                 next_p.to_owned() - cp.to_owned()
             }).enumerate().for_each(|(index, dist)| {
-                let entry = map.entry((dist, index)).or_insert(HashSet::new());
+                let entry = map.entry(Transform {
+                    orientation_index: index,
+                    relative_position: dist,
+                }).or_insert(HashSet::new());
                 entry.insert(next_p.to_owned());
             })
         })
     });
-    map
+    map.iter().find_map(|(transform, beacons)| {
+        if beacons.len() >= 12 {
+            Some(transform.to_owned())
+        } else {
+            None
+        }
+    } )
 }
 
 #[test]
 fn test_normalize_beacons() {
-    let a_list = get_lists(&split_lines(r#"404,-588,-901
-    528,-643,409
-    -838,591,734
-    390,-675,-793
-    -537,-823,-458
-    -485,-357,347
-    -345,-311,381
-    -661,-816,-575
-    -876,649,763
-    -618,-824,-621
-    553,345,-567
-    474,580,667
-    -447,-329,318
-    -584,868,-557
-    544,-627,-890
-    564,392,-477
-    455,729,728
-    -892,524,684
-    -689,845,-530
-    423,-701,434
-    7,-33,-71
-    630,319,-379
-    443,580,662
-    -789,900,-551
-    459,-707,401"#));
-    let b_list = get_lists(&split_lines(r#"686,422,578
-    605,423,415
-    515,917,-361
-    -336,658,858
-    95,138,22
-    -476,619,847
-    -340,-569,-846
-    567,-361,727
-    -460,603,-452
-    669,-402,600
-    729,430,532
-    -500,-761,534
-    -322,571,750
-    -466,-666,-811
-    -429,-592,574
-    -355,545,-477
-    703,-491,-529
-    -328,-685,520
-    413,935,-424
-    -391,539,-444
-    586,-435,557
-    -364,-763,-893
-    807,-499,-711
-    755,-354,-619
-    553,889,-390"#));
-    let map = calc_distance_map(&b_list, &a_list);
-    let max = map.iter().max_by(|x, y| x.1.len().cmp(&y.1.len()));
-    assert_eq!(max.map(|x| x.1.len()), Some(12));
-    let normalized_beacons = get_normalize_beacons(&b_list, &a_list);
-    for point in normalized_beacons {
-        println!("{}", point);
-    }
-}
-
-fn get_normalize_beacons(start_points: &Vec<Beacon>, end_points: &Vec<Beacon>) -> Vec<Beacon> {
-    let map = calc_distance_map(start_points, end_points);
-    let (distances, size) = map.iter()
-        .max_by(|x, y| x.1.len().cmp(&y.1.len()))
-        .unwrap();
-    // TODO split this func
-    // 1. calc only 12 overlapping beacons then normalize
-    // 2. normalize with a -> b -> c -> 0
-    println!("distances {} : rotate {}: count {}", distances.0, distances.1, size.len());
-    start_points.iter().map(|p| map_directions(p)[distances.1].to_owned() + distances.0.to_owned()).collect()
-}
-
-fn get_full_list_beacons(list: &Vec<Vec<Beacon>>) -> Vec<Beacon> {
-    let base_beacons = list[0].to_owned();
-    let mut full_list = vec!{};
-    for next_beacons in list[1..].iter() {
-        let normalized_beacons = get_normalize_beacons(next_beacons, &base_beacons);
-        for beacon in normalized_beacons {
-            if !full_list.contains(&beacon) {
-                full_list.push(beacon);
-            }
-        }
-    }
-    full_list
-}
-
-fn main() {
-    let data = get_group_str_from_file(&vec!{"aoc2021", "data", "19.txt"});
+    let data = get_group_str_from_file(&vec!{"aoc2021", "data", "19.test.txt"});
     let res = get_str_array_from_file(&vec!{"aoc2021", "data", "19.res.txt"});
     let res_list = get_lists(&res);
     let beacons_list: Vec<Vec<Beacon>> = data.iter().map(|group| {
         get_lists(&group[1..].to_vec())
     }).collect();
     let full_list_beacons = get_full_list_beacons(&beacons_list);
-    for (index, beacons) in beacons_list.iter().enumerate() {
-        println!("{}: {}", index, beacons.len());
-    }
     for point in &full_list_beacons {
         if !res_list.contains(point) {
             println!("{}", point);
         }
     }
-    println!("{:?}", full_list_beacons.len());
+    assert_eq!(full_list_beacons.len(), 79);
+}
+
+fn calc_full_transform_graph(list: &Vec<Vec<Beacon>>) -> TransformGraph {
+    let mut map = HashMap::new();
+    for (i, list_a) in list.iter().enumerate() {
+        for (j, list_b) in list.iter().enumerate() {
+            if i != j {
+                match find_possible_transform(list_a, list_b) {
+                    Some(transform) => {
+                        map.insert((i, j), transform);
+                    },
+                    _ => {},
+                }
+            }
+        }
+    }
+    map
+}
+
+fn get_normalize_beacons(start_points: &Vec<Beacon>, transform: &Transform) -> Vec<Beacon> {
+    let Transform { orientation_index, relative_position } = transform;
+    start_points.iter().map(|p| map_orientations(p)[*orientation_index].to_owned() + relative_position.to_owned()).collect()
+}
+
+fn get_full_list_beacons(list: &Vec<Vec<Beacon>>) -> HashSet<Beacon> {
+    let transform_graph = calc_full_transform_graph(list);
+    let edges: Vec<(usize, usize)> = transform_graph.keys().map(|x| x.to_owned()).collect();
+    list.iter().enumerate().flat_map(|(index, beacons)| {
+        let shorest_path = get_shortest_path(index, 0, &edges).expect(&format!("not found valid path: {} to 0", index));
+        shorest_path.iter().fold(beacons.to_owned(), |curr, path| {
+            get_normalize_beacons(&curr, transform_graph.get(path).unwrap())
+        })
+    }).collect()
+    
+}
+
+fn main() {
+    let now = Local::now();
+    let data = get_group_str_from_file(&vec!{"aoc2021", "data", "19.txt"});
+    let beacons_list: Vec<Vec<Beacon>> = data.iter().map(|group| {
+        get_lists(&group[1..].to_vec())
+    }).collect();
+    let full_list_beacons = get_full_list_beacons(&beacons_list);
+    println!("Part 1: {}", full_list_beacons.len());
+    let duration = Local::now() - now;
+    println!("Cost: {:?}", duration.to_std().unwrap());
 }
