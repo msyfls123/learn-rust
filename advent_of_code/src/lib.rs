@@ -10,12 +10,13 @@ pub mod geometry;
 pub mod algorithm;
 
 pub fn get_str_from_file(path_list: &Vec<&str>) -> String {
+  let base_path: PathBuf = current_dir().unwrap().iter()
+    // drop duplicated workspace segment
+    .filter(|segment| segment.to_str() != Some("advent_of_code")).collect();
   let path = path_list.iter().fold(
-    current_dir().unwrap().join("advent_of_code").join("src"),
+    base_path.join("advent_of_code").join("src"),
     |acc, x| acc.join(x)
   );
-  // dedup `advent_of_code` segment since tests are run in workspace
-  let path: PathBuf = path.iter().dedup().collect();
   let mut file = File::open(path).unwrap();
   let mut s = String::new();
   file.read_to_string(&mut s).unwrap();
