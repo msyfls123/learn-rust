@@ -1,17 +1,21 @@
 #[macro_use] extern crate lazy_static;
-use std::path::Path;
+use std::env::current_dir;
+use std::path::{PathBuf};
 use std::fs::File;
 use std::io::prelude::*;
 use itertools::Itertools;
 
 pub mod aoc2017;
 pub mod geometry;
+pub mod algorithm;
 
 pub fn get_str_from_file(path_list: &Vec<&str>) -> String {
   let path = path_list.iter().fold(
-    Path::new("advent_of_code").join("src"),
+    current_dir().unwrap().join("advent_of_code").join("src"),
     |acc, x| acc.join(x)
   );
+  // dedup `advent_of_code` segment since tests are run in workspace
+  let path: PathBuf = path.iter().dedup().collect();
   let mut file = File::open(path).unwrap();
   let mut s = String::new();
   file.read_to_string(&mut s).unwrap();
