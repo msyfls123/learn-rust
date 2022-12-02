@@ -141,7 +141,8 @@ fn test_normalize_beacons() {
     let beacons_list: Vec<Vec<Beacon>> = data.iter().map(|group| {
         get_lists(&group[1..].to_vec())
     }).collect();
-    let full_list_beacons = get_full_list_beacons(&beacons_list);
+    let transform_graph = calc_full_transform_graph(&beacons_list);
+    let full_list_beacons = get_full_list_beacons(&beacons_list, &transform_graph);
     for point in &full_list_beacons {
         if !res_list.contains(point) {
             println!("{}", point);
@@ -172,8 +173,8 @@ fn get_normalize_beacons(start_points: &Vec<Beacon>, transform: &Transform) -> V
     start_points.iter().map(|p| map_orientations(p)[*orientation_index].to_owned() + relative_position.to_owned()).collect()
 }
 
-fn get_full_list_beacons(list: &Vec<Vec<Beacon>>) -> HashSet<Beacon> {
-    let transform_graph = calc_full_transform_graph(list);
+fn get_full_list_beacons(list: &Vec<Vec<Beacon>>, transform_graph: &TransformGraph) -> HashSet<Beacon> {
+    
     let edges: Vec<(usize, usize)> = transform_graph.keys().map(|x| x.to_owned()).collect();
     list.iter().enumerate().flat_map(|(index, beacons)| {
         let shorest_path = get_shortest_path(index, 0, &edges).expect(&format!("not found valid path: {} to 0", index));
@@ -184,14 +185,62 @@ fn get_full_list_beacons(list: &Vec<Vec<Beacon>>) -> HashSet<Beacon> {
     
 }
 
+fn calc_distances_of_scanners(list: &Vec<Vec<Beacon>>, transform_graph: &TransformGraph) -> PointSet {
+    let edges: Vec<(usize, usize)> = transform_graph.keys().map(|x| x.to_owned()).collect();
+    let length = list.len();
+    (0..length).map(|i| {
+        let base_beacon = Beacon { x: 0, y: 0, z: 0 };
+        if i == 0 {
+            base_beacon
+        } else {
+            let shorest_path = get_shortest_path(i, 0, &edges).expect(&format!("not found valid path: {} to 0", i));
+            shorest_path.iter().fold(base_beacon, |curr, path| {
+                get_normalize_beacons(&vec!{curr}, transform_graph.get(path).unwrap())[0].to_owned()
+            })
+        }
+    }).collect()
+}
+
+fn find_largest_distance(points: &PointSet) -> isize {
+    let mut max = 0;
+    for (i, point) in points.iter().enumerate() {
+        for (j, point2) in points.iter().enumerate() {
+            if i != j {
+                let diff = point.to_owned() - point2.to_owned();
+                let distance = isize::abs(diff.x) + isize::abs(diff.y) + isize::abs(diff.z);
+                if distance > max {
+                    max = distance
+                }
+            }
+        }
+    }
+    max
+}
+
+#[test]
+fn test_find_largest_distance() {
+    let data = get_group_str_from_file(&vec!{"aoc2021", "data", "19.test.txt"});
+    let beacons_list: Vec<Vec<Beacon>> = data.iter().map(|group| {
+        get_lists(&group[1..].to_vec())
+    }).collect();
+    let transform_graph = calc_full_transform_graph(&beacons_list);
+    let scanners = calc_distances_of_scanners(&beacons_list, &transform_graph);
+    let largest_distance = find_largest_distance(&scanners);
+    assert_eq!(largest_distance, 3621);
+}
+
 fn main() {
     let now = Local::now();
     let data = get_group_str_from_file(&vec!{"aoc2021", "data", "19.txt"});
     let beacons_list: Vec<Vec<Beacon>> = data.iter().map(|group| {
         get_lists(&group[1..].to_vec())
     }).collect();
-    let full_list_beacons = get_full_list_beacons(&beacons_list);
-    println!("Part 1: {}", full_list_beacons.len());
+    let transform_graph = calc_full_transform_graph(&beacons_list);
     let duration = Local::now() - now;
-    println!("Cost: {:?}", duration.to_std().unwrap());
+    println!("Transform graph cost: {:?}", duration.to_std().unwrap());
+    let full_list_beacons = get_full_list_beacons(&beacons_list, &transform_graph);
+    println!("Part 1: {}", full_list_beacons.len());
+    let scanners = calc_distances_of_scanners(&beacons_list, &transform_graph);
+    let largest_distance = find_largest_distance(&scanners);
+    println!("Part 2: {}", largest_distance);
 }
