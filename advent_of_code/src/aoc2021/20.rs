@@ -67,7 +67,7 @@ fn enhance_pixel(pixel: &Pixel, image: &Image, algorithom: &str, round: usize) -
         (x, y + 1),
         (x + 1, y + 1),
     ].iter()
-        .map(|curr| image.get(curr).map_or(round % 2 == 1, |x| *x))
+        .map(|curr| image.get(curr).map_or(default_pixel, |x| *x))
         .collect();
     let text = corresponding_pixels.iter().map(|&x| {
         if x { '1' } else { '0' }
@@ -94,10 +94,15 @@ fn main() {
     let orig_image = parse_image(&data[1]);
     let algorithom = data[0][0].to_owned();
     let mut image = orig_image.to_owned();
-    print_image(&image);
+    // print_image(&image);
     for round in 0..2 {
         image = enhance_image(&image, &algorithom, round);
-        print_image(&image);
+        // print_image(&image);
     }
     println!("Part 1: {}", image.values().filter(|&x| *x).count());
+    let mut image = orig_image.to_owned();
+    for round in 0..50 {
+        image = enhance_image(&image, &algorithom, round);
+    }
+    println!("Part 2: {}", image.values().filter(|&x| *x).count());
 }
