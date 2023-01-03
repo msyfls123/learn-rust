@@ -28,7 +28,7 @@ trait StateTrait {
     fn hallway_to_room(&self, h_idx: usize, room_info: (usize, usize)) -> Option<Self> where Self: Sized;
     fn new_hallway(&self, room_info: (usize, usize), h_idx: usize, target: usize, is_leaving: bool) -> Hallway;
     fn new_rooms(&self, room_info: (usize, usize), h_idx: usize, target: usize, is_leaving: bool) -> Vec<Vec<usize>>;
-    fn room_clear(&self, r_idx: usize, a_pos: usize, is_leaving: bool) -> bool;
+    fn room_clear(&self, r_idx: usize, a_pos: usize, target: Option<usize>) -> bool;
     fn hallway_clear(&self, r_idx: usize, h_idx: usize, is_leaving: bool) -> bool;
     fn hv(&self, h_idx: usize) -> char;
     fn rv(&self, r_idx: usize, a_pos: usize) -> char;
@@ -209,7 +209,7 @@ impl <T: HasHallwayAndRooms + Clone> StateTrait for T where [(); Self::SIZE]: {
     /// a_pos: amphipod position in room \
     /// h_idx: hallway index
     fn room_to_hallway(&self, (r_idx, a_pos): (usize, usize), h_idx: usize) -> Option<Self> {
-        if !self.room_clear(r_idx, a_pos, true) {
+        if !self.room_clear(r_idx, a_pos, None) {
             return None;
         }
         if !self.hallway_clear(r_idx, h_idx, false) {
@@ -225,14 +225,14 @@ impl <T: HasHallwayAndRooms + Clone> StateTrait for T where [(); Self::SIZE]: {
     }
 
     fn hallway_to_room(&self, h_idx: usize, (r_idx, a_pos): (usize, usize)) -> Option<Self> {
-        if !self.room_clear(r_idx, a_pos, false) {
-            return None;
-        }
         if !self.hallway_clear(r_idx, h_idx, true) {
             return None;
         }
         let target = self.get_hallway()[h_idx];
         if r_idx + 1 != target {
+            return None;
+        }
+        if !self.room_clear(r_idx, a_pos, Some(target)) {
             return None;
         }
         let hallway = self.new_hallway((r_idx, a_pos), h_idx, target, true);
@@ -270,15 +270,23 @@ impl <T: HasHallwayAndRooms + Clone> StateTrait for T where [(); Self::SIZE]: {
         }).collect::<Vec<Vec<usize>>>()
     }
 
-    fn room_clear(&self, r_idx: usize, a_pos: usize, is_leaving: bool) -> bool {
+    fn room_clear(&self, r_idx: usize, a_pos: usize, target: Option<usize>) -> bool {
         self.get_rooms()[r_idx].iter().enumerate().filter(|&(pos, amph)| {
-            (
-                if is_leaving {
-                    pos > a_pos
-                } else {
+            if (
+                if target.is_some() {
                     pos >= a_pos
+                } else {
+                    pos > a_pos
                 }
-            ) && amph != &0
+            ) {
+                amph != &0
+            } else {
+                if target.is_some() {
+                    amph != &target.unwrap()
+                } else {
+                    false
+                }
+            }
         }).count() == 0
     }
 
@@ -437,23 +445,29 @@ fn test_energy() {
     assert_eq!(start.energy((3, 0), 6, true), 4);
 }
 
-fn shortest_path<T: Eq + Hash + Ord + Clone + Copy + StateTrait + Display>(start: T, end: &T) -> Option<usize> {
+fn shortest_path<T: Eq + Hash + Ord + Clone + Copy + StateTrait + Display>(start: T, end: &T) -> Option<(usize, Vec<(T, usize)>)> {
     let mut dist = HashMap::new();
     let mut heap = BinaryHeap::new();
-    dist.insert(start, 0);
+    dist.insert(start, (0, vec!{start}));
     heap.push(Reverse((0, start)));
-    let mut step = 0;
+    // let mut step = 0;
     while let Some(item) = heap.pop() {
         let (energy, state) = item.0;
-        step += 1;
+        // step += 1;
         // audit ...
-        if step % 10000 == 0 {
-            println!("{}Energy: {}\n\n----------\n\n", state, energy);
+        // if step % 100_000 == 0 {
+        //     println!("{}Energy: {}\n\n----------\n\n", state, energy);
+        // }
+
+        if &state == end {
+            let entry = dist.entry(state).or_default();
+            return Some((
+                energy,
+                entry.1.clone().iter().map(|s| (s.to_owned(), dist.get(s).unwrap().0)).collect()
+            ));
         }
 
-        if &state == end { return Some(energy); }
-
-        if &energy > dist.get(&state).or(Some(&usize::MAX)).unwrap() { continue; }
+        if energy > dist.get(&state).or(Some(&(usize::MAX, vec!{}))).unwrap().0 { continue; }
 
         for (new_state, new_energy) in state.possible_edge_states() {
             let next = (
@@ -461,9 +475,12 @@ fn shortest_path<T: Eq + Hash + Ord + Clone + Copy + StateTrait + Display>(start
                 new_state,
             );
 
-            if &next.0 < dist.get(&next.1).or(Some(&usize::MAX)).unwrap() {
+            let entry_state = dist.get(&state).unwrap();
+            let prev_states = entry_state.1.clone();
+            let entry_current = dist.entry(next.1).or_insert((usize::MAX, vec!{}));
+            if next.0 < entry_current.0 {
                 heap.push(Reverse(next));
-                dist.insert(next.1, next.0);
+                dist.insert(next.1, (next.0, [prev_states, vec!{next.1}].concat()));
             }
         }
     }
@@ -472,7 +489,6 @@ fn shortest_path<T: Eq + Hash + Ord + Clone + Copy + StateTrait + Display>(start
 
 
 fn main() {
-    let now = Local::now();
     let start = StateFor2 {
         hallway: [0,0,0,0,0,0,0],
         side_rooms: [
@@ -492,17 +508,15 @@ fn main() {
         ]
     };
     let shorest_path1 = shortest_path(start, &end);
-    println!("Part 1: {:?}", shorest_path1);
-    let duration = Local::now() - now;
-    println!("Transform graph cost: {:?}", duration.to_std().unwrap());
 
+    let now = Local::now();
     let start = StateFor4 {
         hallway: [0,0,0,0,0,0,0],
         side_rooms: [
             [4,4,4,4],
-            [3,2,3,1],
-            [2,1,2,3],
-            [2,3,1,1],
+            [1,2,3,3],
+            [1,1,2,2],
+            [2,3,1,3],
         ]
     };
     let end = StateFor4 {
@@ -515,6 +529,14 @@ fn main() {
         ]
     };
     let shorest_path2 = shortest_path(start, &end);
-    println!("Part 1: {:?}", shorest_path1);
-    println!("Part 2: {:?}", shorest_path2);
+    let duration = Local::now() - now;
+    println!("Find shorest path two cost: {:?}", duration.to_std().unwrap());
+    println!("Part 1: {:?}", shorest_path1.map(|v| v.0));
+    if let Some((mark, states)) = shorest_path2 {
+        println!("Part 2: {}", mark);
+        for state in states {
+            println!("Energy: {}\n{}\n\n", state.1, state.0);
+        }
+    }
+    
 }
