@@ -9,7 +9,8 @@ type Unit = [isize; 4];
  */
 type Cache = HashSet<Unit>;
 
-const SORTED_INPUTS: [isize;9] = [9,8,7,6,5,4,3,2,1];
+const SORTED_LARGE_INPUTS: [isize;9] = [9,8,7,6,5,4,3,2,1];
+const SORTED_SMALL_INPUTS: [isize;9] = [1,2,3,4,5,6,7,8,9];
 
 #[derive(Debug, PartialEq, Eq)]
 struct InstructionResult {
@@ -111,6 +112,7 @@ fn find_sat_input(
     mut unit: Unit,
     mut index: usize,
     failed_cache: &mut [Cache],
+    is_large: bool
 ) -> Option<Vec<isize>> {
     let (init_unit, init_index) = (unit, index);
     if failed_cache[init_index].contains(&init_unit) {
@@ -120,10 +122,15 @@ fn find_sat_input(
     while index < total {
         let instruction_text = &instructions[index];
         let is_inp = instruction_text[0] == "inp";
+        let inputs = if is_large {
+            SORTED_LARGE_INPUTS
+        } else {
+            SORTED_SMALL_INPUTS
+        };
         if is_inp {
-            for input in SORTED_INPUTS {
+            for input in inputs {
                 InstructionResult { unit, .. } = instruction(&unit, &instruction_text, input);
-                if let Some(res) = find_sat_input(instructions, unit, index + 1, failed_cache) {
+                if let Some(res) = find_sat_input(instructions, unit, index + 1, failed_cache, is_large) {
                     return Some([vec!{input}, res].concat())
                 }
                 // debug, show first two inp results
@@ -151,8 +158,15 @@ fn main() {
     let data = get_str_array_from_file(&vec!{"aoc2021", "data", "24.txt"});
     let instructions: Vec<Vec<&str>> = data.iter().map(|text| text.split(" ").collect()).collect();
     let mut cache = vec![Cache::new(); instructions.len()];
-    let first = find_sat_input(&instructions, [0,0,0,0], 0, &mut cache);
-    println!("Part 1: {:?}", first.map(|nums| {
+    let largest = find_sat_input(&instructions, [0,0,0,0], 0, &mut cache, true);
+    println!("Part 1: {:?}", largest.map(|nums| {
+        nums.iter().map(|num| num.to_string()).collect::<String>()
+    }));
+
+    let mut cache = vec![Cache::new(); instructions.len()];
+    // will take a long long time...
+    let smallest = find_sat_input(&instructions, [0,0,0,0], 0, &mut cache, false);
+    println!("Part 2: {:?}", smallest.map(|nums| {
         nums.iter().map(|num| num.to_string()).collect::<String>()
     }));
 }
