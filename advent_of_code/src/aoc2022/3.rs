@@ -1,9 +1,10 @@
 use advent_of_code::get_str_array_from_file;
+use itertools::Itertools;
 
 fn find_intersection_char<T: Into<String> + Clone>(str1: T, str2: T) -> String {
     let binding = str1.clone().into();
     let str1 = binding.chars();
-    str1.filter(|&a| {
+    str1.unique().filter(|&a| {
         let binding = str2.clone().into();
         let mut str2 = binding.chars();
         str2.any(|b| a == b)
