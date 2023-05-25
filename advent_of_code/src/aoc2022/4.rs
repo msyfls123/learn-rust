@@ -16,6 +16,15 @@ impl Pair {
         let (s3, s4) = self.section2;
         (s1 <= s3 && s2 >= s4) || (s1 >= s3 && s2 <= s4)
     }
+
+    fn is_overlapped(&self) -> bool {
+        if self.is_contained() {
+            return  true;
+        }
+        let (s1, s2) = self.section1;
+        let (s3, s4) = self.section2;
+        (s1 <= s3  && s3 <= s2) || (s1 <= s4 && s4 <= s2)
+    }
 }
 
 fn get_pair(text: String) -> Pair {
@@ -42,4 +51,6 @@ fn main() {
     let pairs: Vec<Pair> = data.iter().map(|line| get_pair(line.to_string())).collect();
     let contained_pairs = pairs.iter().filter(|p| p.is_contained()).count();
     println!("Part 1: {}", contained_pairs);
+    let overlapped_pairs = pairs.iter().filter(|p| p.is_overlapped()).count();
+    println!("Part 2: {}", overlapped_pairs);
 }
