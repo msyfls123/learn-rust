@@ -42,7 +42,7 @@ fn test_create_procedure() {
     assert_eq!(procedure, expected);
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Supply {
     stacks: Vec<Stack>
 }
@@ -91,6 +91,14 @@ impl Supply {
         }
     }
 
+    fn retain(&mut self, procedure: &Procedure) {
+        let Procedure { count, from, to } = procedure.to_owned();
+        
+        let index = self.stacks[*from].len() - count;
+        let mut moved = self.stacks[*from].split_off(index);
+        self.stacks[*to].append(&mut moved);
+    }
+
     fn get_top_crates(&self) -> String {
         self.stacks.iter().filter_map(|stack| stack.last()).collect()
     }
@@ -134,14 +142,44 @@ fn test_rearrange() {
     assert_eq!(supply, expected);
 }
 
+#[test]
+fn test_retain() {
+    let data = split_lines(r#"[D]    
+[N] [C]    
+[Z] [M] [P]
+ 1   2   3"#);
+    let mut supply = Supply::from_lines(&data);
+    let procedure = Procedure::from_text(&String::from("move 3 from 1 to 3"));
+    let expected = Supply {
+        stacks: vec!{
+            vec!{},
+            vec!{},
+            vec!{'M', 'C'},
+            vec!{'P', 'Z', 'N', 'D'},
+        }
+    };
+    supply.retain(&procedure);
+    assert_eq!(supply, expected);
+}
+
 fn main() {
     let data = get_group_str_from_file(&vec!{"aoc2022", "data", "5.txt"});
-    let mut supply = Supply::from_lines(&data[0]);
+    let supply = Supply::from_lines(&data[0]);
     let procedures: Vec<Procedure> = data[1].iter().map(|line| Procedure::from_text(&line)).collect();
 
-    for procedure in procedures {
-        supply.rearrange(&procedure);
+    let mut supply1 = supply.clone();
+
+    for procedure in &procedures {
+        supply1.rearrange(&procedure);
     }
 
-    println!("Part 1: {}", supply.get_top_crates());
+    println!("Part 1: {}", supply1.get_top_crates());
+
+    let mut supply2 = supply.clone();
+
+    for procedure in procedures {
+        supply2.retain(&procedure);
+    }
+
+    println!("Part 2: {}", supply2.get_top_crates());
 }
