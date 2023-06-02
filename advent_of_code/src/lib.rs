@@ -54,5 +54,5 @@ pub fn get_group_str_from_file(path_list: &Vec<&str>) -> Vec<Vec<String>> {
 }
 
 pub fn split_lines(text: &str) -> Vec<String> {
-  text.lines().into_iter().map(|t| t.trim().to_string()).collect()
+  text.lines().into_iter().map(|t| t.trim_end().to_string()).collect()
 }
