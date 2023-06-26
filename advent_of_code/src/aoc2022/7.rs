@@ -1,35 +1,96 @@
-use std::{cell::RefCell, rc::Rc, fmt::Display};
+use std::{cell::{RefCell}, rc::Rc, fmt::Display};
 
+#[derive(Debug, Clone)]
 struct Dir {
     name: String,
-    subs: Vec<Rc<RefCell<Dir>>>,
-    parent: Option<Rc<RefCell<Dir>>>,
+    subs: Vec<Rc<RefCell<Node>>>,
+    parent: Option<Rc<RefCell<Node>>>,
+}
+
+#[derive(Debug, Clone)]
+struct File {
+    name: String,
+    size: usize,
+    parent: Option<Rc<RefCell<Node>>>,
+}
+
+#[derive(Debug, Clone)]
+enum Node {
+    Dir(Dir),
+    File(File)
+}
+
+trait HasParent {
+    fn get_parent(&self) -> Option<&Rc<RefCell<Node>>>;
+
+    fn get_depth(&self) -> usize {
+        match self.get_parent() {
+            Some(parent) => parent.as_ref().borrow().get_depth() + 1,
+            None => 0,
+        }
+    }
 }
 
 impl Dir {
-    fn add_sub(&mut self, sub: &Rc<RefCell<Dir>>) {
-        self.subs.push(Rc::clone(sub));
+    fn get_node(&self, sub_name: &str) -> Option<Rc<RefCell<Node>>> {
+        self.subs.iter().find(|&s| {
+            match s.borrow().to_owned() {
+                Node::Dir(dir) => dir.name == sub_name,
+                Node::File(file) => file.name == sub_name,
+            }
+        }).map(|x| x.to_owned())
     }
 
-    fn create_sub(this: &Rc<RefCell<Self>>, sub_name: &str) -> Rc<RefCell<Dir>> {
-        let sub = Rc::new(RefCell::new(Dir {
+    
+}
+
+impl HasParent for Dir {
+    fn get_parent(&self) -> Option<&Rc<RefCell<Node>>> {
+        self.parent.as_ref()
+    }
+}
+
+impl Node {
+    fn create_sub_dir(this: &Rc<RefCell<Self>>, sub_name: &str) -> Rc<RefCell<Node>> {
+        let sub = Dir {
             name: sub_name.to_string(),
             subs: vec!{},
             parent: Some(Rc::clone(this)),
-        }));
-        this.as_ref().borrow_mut().subs.push(Rc::clone(&sub));
+        };
+        let sub = Rc::new(RefCell::new(Node::Dir(sub)));
+        match *this.borrow_mut() {
+            Node::Dir(ref mut dir) => dir.subs.push(Rc::clone(&sub)),
+            Node::File(_) => panic!("you should not add sub to file")
+        }
         sub
-
     }
 
-    fn get_sub(&self, sub_name: &str) -> Option<&Rc<RefCell<Dir>>> {
-        self.subs.iter().find(|s| s.as_ref().borrow().name == sub_name)
+    fn create_sub_node(this: &Rc<RefCell<Self>>, sub_name: &str, size: usize) -> Rc<RefCell<Node>> {
+        let file = File {
+            name: sub_name.to_string(),
+            size,
+            parent: Some(Rc::clone(this)),
+        };
+        let sub = Rc::new(RefCell::new(Node::File(file)));
+        match *this.borrow_mut() {
+            Node::Dir(ref mut dir) => dir.subs.push(Rc::clone(&sub)),
+            Node::File(_) => panic!("you should not add sub to file")
+        }
+        sub
     }
+}
 
-    fn get_depth(&self) -> usize {
-        match &self.parent {
-            Some(parent) => parent.as_ref().borrow().get_depth() + 1,
-            None => 0,
+impl HasParent for File {
+    fn get_parent(&self) -> Option<&Rc<RefCell<Node>>> {
+        self.parent.as_ref()
+    }
+}
+
+impl HasParent for Node {
+    fn get_parent(&self) -> Option<&Rc<RefCell<Node>>> {
+        match self {
+            Node::Dir(dir) => dir.get_parent(),
+            Node::File(file) => file.get_parent(),
         }
     }
 }
@@ -39,21 +100,39 @@ impl Display for Dir {
         f.pad(&"  ".repeat(self.get_depth()));
         writeln!(f, "- {} (dir)", self.name);
         for sub in &self.subs {
-            write!(f, "{}", sub.as_ref().borrow());
+            write!(f, "{}", *sub.as_ref().borrow());
         }
         write!(f, "")
     }
 }
 
+impl Display for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.pad(&"  ".repeat(self.get_depth()));
+        writeln!(f, "- {} (file)(size: {})", self.name, self.size);
+        write!(f, "")
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Node::Dir(dir) => write!(f, "{}", dir),
+            Node::File(file) => write!(f, "{}", file),
+        }
+    }
+}
+
 fn main() {
-    let root = Rc::new(RefCell::new(Dir {
+    let root = Rc::new(RefCell::new(Node::Dir(Dir {
         name: "root".to_string(),
         subs: vec!{},
         parent: None,
-    }));
+    })));
 
-    let sub_a = Dir::create_sub(&root, "sub_a");
-    Dir::create_sub(&root, "sub_b");
-    Dir::create_sub(&sub_a, "sub_sub_c");
-    println!("{}", root.as_ref().borrow());
+    let sub_a = Node::create_sub_dir(&root, "sub_a");
+    Node::create_sub_dir(&root, "sub_b");
+    Node::create_sub_dir(&sub_a, "sub_sub_c");
+    Node::create_sub_node(&sub_a, "sub_sub_d", 999);
+    println!("{}", (&*root).borrow());
 }
