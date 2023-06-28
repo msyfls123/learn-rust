@@ -311,7 +311,19 @@ fn main() {
     let root = traverse(&data);
     println!("{}", root.borrow());
     let mut map: SizeMap = HashMap::new();
-    root.borrow().audit(&mut map);
+    let root_size = root.borrow().audit(&mut map);
     let small_dir_space: usize = map.values().filter(|&x| x <= &100_000).sum();
     println!("Part 1: {}", small_dir_space);
+
+    let threshold = root_size - 40_000_000;
+    let lucky_dog = map
+        .values()
+        .fold(usize::MAX, |smallest, &v| {
+            if (v >= threshold) {
+                v.min(smallest)
+            } else {
+                smallest
+            }
+        });
+    println!("Part 2: {}", lucky_dog);
 }
