@@ -1,7 +1,8 @@
 extern crate regex;
 #[macro_use] extern crate lazy_static;
 
-use std::{cell::{RefCell}, rc::Rc, fmt::Display};
+use std::{cell::{RefCell}, rc::Rc, fmt::Display, collections::HashMap};
+use advent_of_code::get_str_array_from_file;
 use regex::Regex;
 
 /*
@@ -10,10 +11,12 @@ use regex::Regex;
 
 type INode = Rc<RefCell<Node>>;
 
+type SizeMap = HashMap<String, usize>;
+
 #[derive(Debug, Clone)]
 struct Dir {
     name: String,
-    subs: Vec<INode>,
+    subs: RefCell<Vec<INode>>,
     parent: Option<INode>,
 }
 
@@ -31,7 +34,7 @@ enum Node {
 }
 
 trait HasParent {
-    fn get_parent(&self) -> Option<&INode>;
+    fn get_parent(&self) -> Option<INode>;
 
     fn get_depth(&self) -> usize {
         match self.get_parent() {
@@ -43,33 +46,55 @@ trait HasParent {
 
 impl Dir {
     fn get_node(&self, sub_name: &str) -> Option<INode> {
-        self.subs.iter().find(|&s| {
+        self.subs.borrow().iter().find(|&s| {
             match s.borrow().to_owned() {
                 Node::Dir(dir) => dir.name == sub_name,
                 Node::File(file) => file.name == sub_name,
             }
-        }).map(|x| x.to_owned())
+        }).map(|x| Rc::clone(x))
+    }
+
+    /**
+     * Holy shit..
+     */
+    fn get_full_path(&self) -> String {
+        match &self.parent {
+            Some(parent) => match *Rc::clone(&parent).borrow() {
+                Node::Dir(ref par) => par.get_full_path() + "/" + &self.name,
+                Node::File(_) => panic!("we should have sth wrong")
+            },
+            None => self.name.to_owned()
+        }
     }
 }
 
 impl HasParent for Dir {
-    fn get_parent(&self) -> Option<&INode> {
-        self.parent.as_ref()
+    fn get_parent(&self) -> Option<INode> {
+        self.parent.as_ref().map(|p| Rc::clone(&p))
     }
 }
 
 impl Node {
+    fn root() -> INode {
+        Rc::new(RefCell::new(Node::Dir(Dir {
+            name: "/".to_string(),
+            subs: RefCell::new(vec!{}),
+            parent: None,
+        })))
+    }
+
     fn create_sub_dir(this: &Rc<RefCell<Self>>, sub_name: &str) -> INode {
         let sub = Dir {
             name: sub_name.to_string(),
-            subs: vec!{},
+            subs: RefCell::new(vec!{}),
             parent: Some(Rc::clone(this)),
         };
         let sub = Rc::new(RefCell::new(Node::Dir(sub)));
-        match *this.borrow_mut() {
-            Node::Dir(ref mut dir) => dir.subs.push(Rc::clone(&sub)),
+        match *Rc::clone(&this).borrow() {
+            Node::Dir(ref dir) => dir.subs.borrow_mut().push(Rc::clone(&sub)),
             Node::File(_) => panic!("you should not add sub to file")
         }
+        
         sub
     }
 
@@ -80,29 +105,51 @@ impl Node {
             parent: Some(Rc::clone(this)),
         };
         let sub = Rc::new(RefCell::new(Node::File(file)));
-        match *this.borrow_mut() {
-            Node::Dir(ref mut dir) => dir.subs.push(Rc::clone(&sub)),
+        match *Rc::clone(&this).borrow() {
+            Node::Dir(ref dir) => dir.subs.borrow_mut().push(Rc::clone(&sub)),
             Node::File(_) => panic!("you should not add sub to file")
         }
         sub
     }
 
-    fn get_node(this: &Rc<RefCell<Self>>, name: &str) -> Option<INode> {
-        match this.borrow().to_owned() {
+    fn get_node(&self, name: &str) -> Option<INode> {
+        match self {
             Node::Dir(dir) => dir.get_node(name),
             Node::File(file) => panic!("file {} may not have sub node", file.name)
+        }
+    }
+
+    fn get_size(&self) -> usize {
+        match self {
+            Node::Dir(dir) => dir.subs.borrow().iter().map(|sub| sub.borrow().get_size()).sum(),
+            Node::File(file) => file.size,
+        }
+    }
+
+    fn audit(&self, map: &mut SizeMap) -> usize {
+        match self {
+            Node::Dir(dir) => {
+                let mut total = 0;
+                for sub in &*dir.subs.borrow() {
+                    let sub_size = sub.borrow().audit(map);
+                    total += sub_size;
+                }
+                map.insert(dir.get_full_path(), total);
+                total
+            },
+            Node::File(file) => file.size
         }
     }
 }
 
 impl HasParent for File {
-    fn get_parent(&self) -> Option<&INode> {
-        self.parent.as_ref()
+    fn get_parent(&self) -> Option<INode> {
+        self.parent.as_ref().map(|p| Rc::clone(&p))
     }
 }
 
 impl HasParent for Node {
-    fn get_parent(&self) -> Option<&INode> {
+    fn get_parent(&self) -> Option<INode> {
         match self {
             Node::Dir(dir) => dir.get_parent(),
             Node::File(file) => file.get_parent(),
@@ -114,7 +161,7 @@ impl Display for Dir {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.pad(&"  ".repeat(self.get_depth()));
         writeln!(f, "- {} (dir)", self.name);
-        for sub in &self.subs {
+        for sub in &*self.subs.borrow() {
             write!(f, "{}", *sub.as_ref().borrow());
         }
         write!(f, "")
@@ -210,16 +257,61 @@ fn test_read_line() {
     );
 }
 
-fn main() {
-    let root = Rc::new(RefCell::new(Node::Dir(Dir {
-        name: "root".to_string(),
-        subs: vec!{},
-        parent: None,
-    })));
+/**
+ * Traverse
+ */
 
-    let sub_a = Node::create_sub_dir(&root, "sub_a");
-    Node::create_sub_dir(&root, "sub_b");
-    Node::create_sub_dir(&sub_a, "sub_sub_c");
-    Node::create_sub_node(&sub_a, "sub_sub_d", 999);
-    println!("{}", (&*root).borrow());
+fn traverse(text: &Vec<String>) -> INode {
+    let root = Node::root();
+    let mut current = Rc::clone(&root);
+    use Command::*;
+    for command in text.iter().map(|t| read_line(t)) {
+        // println!("{:?}", command);
+        match command {
+            CdRoot => {
+                current = Rc::clone(&root);
+            },
+            CdParent => {
+                current = Rc::clone(&current).borrow().get_parent().unwrap();
+            },
+            CdSub(name) => {
+                current = Rc::clone(&current).borrow().get_node(&name).unwrap();
+            },
+            Dir(dirname) => {
+                match Rc::clone(&current).borrow().get_node(&dirname) {
+                    Some(_) => {},
+                    None => {
+                        Node::create_sub_dir(&Rc::clone(&current), &dirname);
+                    }
+                }
+            },
+            File(fname, fsize) => {
+                match Rc::clone(&current).borrow().get_node(&fname) {
+                    Some(_) => {},
+                    None => {
+                        Node::create_sub_node(&Rc::clone(&current), &fname, fsize);
+                    }
+                }
+            },
+            List => {},
+        }
+    }
+    root
+}
+
+fn main() {
+    // let root = Node::root();
+    // let sub_a = Node::create_sub_dir(&root, "sub_a");
+    // Node::create_sub_dir(&root, "sub_b");
+    // Node::create_sub_dir(&sub_a, "sub_sub_c");
+    // Node::create_sub_node(&sub_a, "sub_sub_d", 999);
+    // println!("{}", (&*root).borrow());
+
+    let data = get_str_array_from_file(&vec!{"aoc2022", "data", "7.txt"});
+    let root = traverse(&data);
+    println!("{}", root.borrow());
+    let mut map: SizeMap = HashMap::new();
+    root.borrow().audit(&mut map);
+    let small_dir_space: usize = map.values().filter(|&x| x <= &100_000).sum();
+    println!("Part 1: {}", small_dir_space);
 }
