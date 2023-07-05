@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use advent_of_code::get_str_array_from_file;
-use itertools::Itertools;
 
 type Grid = Vec<Vec<usize>>;
 type VisibleSet = HashSet<(usize, usize)>;
@@ -12,7 +11,8 @@ where T: Iterator<Item=&'a usize> {
     list.enumerate().fold(vec!{}, |mut visibles, (i, v)| { 
 
         if tallest.is_some() {
-            if v > tallest.unwrap() {
+            let height = tallest.unwrap();
+            if v > height {
                 tallest = Some(v);
                 visibles.push(i);
             }
@@ -22,6 +22,18 @@ where T: Iterator<Item=&'a usize> {
         }
         visibles
     })
+}
+
+fn find_visible_scenic_line<'a, T>(list: T, tree: usize) -> usize
+where T: Iterator<Item=&'a usize> + ToOwned {
+    let mut count = 0;
+    for curr in list {
+        count += 1;
+        if curr >= &tree {
+            break;
+        }
+    }
+    count
 }
 
 #[test]
@@ -66,6 +78,31 @@ fn test_find_visible_in_grid() {
     assert_eq!(find_visible_in_grid(&grid).len(), 21);
 }
 
+fn scenic_score(grid: &Grid, tree: (usize, usize)) -> usize {
+    let (x, y) = tree;
+    let row = &grid[y];
+    let column: Vec<usize> = grid.iter().map(|row| row[x]).collect();
+    let tree = grid[y][x];
+    let up = find_visible_scenic_line(column[0..y].iter().rev(), tree);
+    let bottom = find_visible_scenic_line(column[y+1..].iter(), tree);
+    let left = find_visible_scenic_line(row[0..x].iter().rev(), tree);
+    let right = find_visible_scenic_line(row[x+1..].iter(), tree);
+    up * bottom * left * right
+}
+
+#[test]
+fn test_scenic_score() {
+    let grid = vec!{
+        vec![3,0,3,7,3],
+        vec![2,5,5,1,2],
+        vec![6,5,3,3,2],
+        vec![3,3,5,4,9],
+        vec![3,5,3,9,0],
+    };
+    assert_eq!(scenic_score(&grid, (2, 1)), 4);
+    assert_eq!(scenic_score(&grid, (2, 3)), 8);
+}
+
 fn main() {
     let data = get_str_array_from_file(&vec!{"aoc2022", "data", "8.txt"});
     let grid = data.iter().map(|row| {
@@ -73,4 +110,17 @@ fn main() {
     }).collect();
     let visibles = find_visible_in_grid(&grid);
     println!("Part 1: {}", visibles.len());
+
+    let mut highest_score = 0;
+    let row_count = grid.len();
+    let column_count = grid[0].len();
+    for x in 0..column_count {
+        for y in 0..row_count {
+            if visibles.contains(&(x, y)) {
+                let score = scenic_score(&grid, (x, y));
+                highest_score = highest_score.max(score);
+            }
+        }
+    }
+    println!("Part 2: {}", highest_score);
 }
