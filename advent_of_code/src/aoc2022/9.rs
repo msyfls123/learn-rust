@@ -6,6 +6,19 @@ use std::collections::HashSet;
 type Point = (isize, isize);
 type VisitedPositions = HashSet<Point>;
 
+
+fn calc_distance(point_a: &Point, point_b: &Point) -> usize {
+  ((point_a.0 - point_b.0).abs() + (point_a.1 - point_b.1).abs()).try_into().unwrap()
+}
+
+fn get_unitary_step(point_a: &Point, point_b: &Point) -> Point {
+  let x = point_b.0 - point_a.0;
+  let y = point_b.1 - point_a.1;
+  let x_step = x.checked_div(x.abs()).unwrap_or_default();
+  let y_step = y.checked_div(y.abs()).unwrap_or_default();
+  (x_step, y_step)
+}
+
 #[derive(Debug, Eq, PartialEq)]
 enum Direction {
     Left,
@@ -42,43 +55,19 @@ impl Motion {
     Motion { direction, step: step.parse::<isize>().unwrap() }
   }
 
-  fn step(&self, head: &Point) -> Point {
+  fn step(&self) -> Point {
     match self.direction {
       Direction::Left => {
-        (head.0 - 1, head.1)
+        (-1, 0)
       },
       Direction::Right => {
-        (head.0 + 1, head.1)
+        (1, 0)
       },
       Direction::Up => {
-        (head.0, head.1 - 1)
+        (0, -1)
       },
       Direction::Down => {
-        (head.0, head.1 + 1)
-      },
-    }
-  }
-
-  fn follow(&self, head: &Point, tail: &Point) -> Point {
-    let distance = calc_distance(head, tail);
-    if distance <= 1 {
-      return *tail
-    }
-    if head.0 != tail.0 && head.1 != tail.1 && distance == 2 {
-      return *tail
-    }
-    match self.direction {
-      Direction::Left => {
-        (head.0 + 1, head.1)
-      },
-      Direction::Right => {
-        (head.0 - 1, head.1)
-      },
-      Direction::Up => {
-        (head.0, head.1 + 1)
-      },
-      Direction::Down => {
-        (head.0, head.1 - 1)
+        (0, 1)
       },
     }
   }
@@ -95,53 +84,79 @@ fn test_parse_motion() {
   );
 }
 
-#[test]
-fn test_follow() {
-  assert_eq!(
-    Motion {
-      direction: Direction::Right,
-      step: 50
-    }.follow(&(0, 1), &(-1, 0)),
-    (-1, 0)
-  );
-  assert_eq!(
-    Motion {
-      direction: Direction::Right,
-      step: 50
-    }.follow(&(255, 1), &(254, 1)),
-    (254, 1)
-  );
-  assert_eq!(
-    Motion {
-      direction: Direction::Up,
-      step: 50
-    }.follow(&(1, -1), &(254, 1)),
-    (1, 0)
-  );
+
+#[derive(Debug)]
+struct Rope {
+  knots: Vec<Point>,
+  length: usize
 }
 
-fn calc_distance(point_a: &Point, point_b: &Point) -> usize {
-  ((point_a.0 - point_b.0).abs() + (point_a.1 - point_b.1).abs()).try_into().unwrap()
-}
-
-fn simulate(motions: &Vec<Motion>) -> VisitedPositions {
-  let mut visited_positions = HashSet::default();
-  let mut head = (0,0);
-  let mut tail = (0,0);
-  visited_positions.insert(tail);
-  for motion in motions {
-    for _ in 0..motion.step {
-      head = motion.step(&head);
-      tail = motion.follow(&head, &tail);
-      visited_positions.insert(tail);
+impl Rope {
+  fn create(length: usize) -> Self {
+    Self {
+      knots: vec!((0,0); length),
+      length,
     }
   }
-  visited_positions
+
+  fn run_motion(&mut self, motion: &Motion) -> VisitedPositions {
+    let mut visited = HashSet::new();
+    visited.insert(*self.knots.last().unwrap());
+
+    for _ in 0..motion.step {
+      self.step(motion);
+      visited.insert(*self.knots.last().unwrap());
+    }
+    visited
+  }
+
+  fn step(&mut self, motion: &Motion) {
+    let mut prev_point = (0, 0);
+    for (i, knot) in self.knots.iter_mut().enumerate() {
+      if i == 0 {
+        let step = motion.step();
+        *knot = (&knot.0 + step.0, &knot.1 + step.1);
+      } else {
+        let distance = calc_distance(knot, &prev_point);
+
+        // directly or diagonally adjacent, don't move
+        if (distance <= 1) || (knot.0 != prev_point.0 && knot.1 != prev_point.1 && distance == 2) {
+          // do nothing
+        } else {
+          // not adjacent
+          let step = get_unitary_step(knot, &prev_point);
+          *knot = (&knot.0 + step.0, &knot.1 + step.1);
+        }
+
+      }
+      prev_point = knot.to_owned();
+    }
+  }
+}
+
+#[test]
+fn test_rope_step() {
+  let mut rope = Rope::create(8);
+  let motion = Motion::from_text("R 50");
+  rope.step(&motion);
+  assert_eq!(rope.knots[0], (1,0));
 }
 
 fn main() {
   let data = get_str_array_from_file(&vec!{"aoc2022", "data", "9.txt"});
   let motions: Vec<Motion> = data.iter().map(|text| Motion::from_text(text)).collect();
-  let visited_positions = simulate(&motions);
-  println!("Part 1: {:?}", visited_positions.len());
+
+  let mut rope1 = Rope::create(2);
+  let visited_positions = motions.iter().fold(HashSet::new(), |mut visited: VisitedPositions, m| {
+    visited.extend(&rope1.run_motion(m));
+    visited
+  });
+  println!("Part 1: {}", visited_positions.len());
+
+  let mut rope2 = Rope::create(10);
+  let visited_positions = motions.iter().fold(HashSet::new(), |mut visited: VisitedPositions, m| {
+    visited.extend(&rope2.run_motion(m));
+    visited
+  });
+  println!("Part 2: {}", visited_positions.len());
 }
