@@ -82,4 +82,43 @@ fn main() {
         index += 1;
     }
     println!("Part 1: {}", sum);
+
+    let mut register = Register {
+        value: 1,
+        cycles: 0,
+    };
+    let mut screen = vec!{};
+    let mut index = 0;
+    while register.cycles < 240 {
+        let Register { value, cycles } = register;
+        let instruction = &instructions[index % instructions.len()];
+        let sprite_pos = value - 1..=value+1;
+        let to_pixel = |v: usize| {
+            let i = (v as isize) % 40;
+            if sprite_pos.contains(&i) {
+                "#"
+            } else {
+                "."
+            }
+        };
+        match instruction {
+            Instruction::Addx(_) => {
+                screen.push(to_pixel(cycles));
+                screen.push(to_pixel(cycles + 1));
+            },
+            Instruction::Noop => {
+                screen.push(to_pixel(cycles));
+            }
+        }
+
+        register.run(&instruction);
+        index += 1;
+    }
+    println!("Part 2:");
+    for (i, v) in screen.iter().enumerate() {
+        if i % 40 == 0 {
+            println!("")
+        }
+        print!("{}", v);
+    }
 }
