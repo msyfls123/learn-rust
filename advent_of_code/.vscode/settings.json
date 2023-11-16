@@ -1,3 +1,8 @@
 {
-  "files.insertFinalNewline": false
+  "files.insertFinalNewline": false,
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#43270F",
+    "titleBar.activeBackground": "#5E3714",
+    "titleBar.activeForeground": "#FDFBF8"
+  }
 }
