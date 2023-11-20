@@ -56,6 +56,22 @@ impl Monkey {
         throw_info_list
     }
 
+    fn round_with_lcm(&mut self, lcm: usize) -> Vec<ThrownInfo> {
+        self.inspect_count += self.staring_items.len();
+        let throw_info_list = self.staring_items.iter().map(|&item| {
+            let mut worry_level = (self.operation)(item);
+            worry_level %= lcm;
+            if (self.test)(worry_level) {
+                ThrownInfo { worry_level, id: self.true_dest }
+            } else {
+                ThrownInfo { worry_level, id: self.false_dest }
+            }
+
+        }).collect();
+        self.staring_items.clear();
+        throw_info_list
+    }
+
     fn accept(&mut self, thrownInfo: &ThrownInfo) {
         self.staring_items.push(thrownInfo.worry_level)
     }
@@ -81,8 +97,13 @@ fn test_round() {
     assert_eq!(monkey.round(), expected_thrown_info_list);
 }
 
-fn create_monkeys() -> Vec<Monkey> {
-    vec!{
+struct Input {
+    monkeys: Vec<Monkey>,
+    lcm: usize
+}
+
+fn create_input() -> Input {
+    let monkeys = vec!{
         Monkey {
             id: 0,
             staring_items: vec!{89, 74},
@@ -155,11 +176,81 @@ fn create_monkeys() -> Vec<Monkey> {
             false_dest: 4,
             inspect_count: 0
         },
+    };
+    Input {
+        monkeys,
+        lcm: 17 * 7 * 13 * 2 * 19 * 3 * 5 * 11,
     }
 }
 
+fn create_example_input() -> Input {
+    let monkeys = vec!{
+        Monkey {
+            id: 0,
+            staring_items: vec!{79, 98},
+            operation: Box::new(|x| x * 19),
+            test: Box::new(|x| x % 23 == 0),
+            true_dest: 2,
+            false_dest: 3,
+            inspect_count: 0
+        },
+        Monkey {
+            id: 1,
+            staring_items: vec!{54, 65, 75, 74},
+            operation: Box::new(|x| x + 6),
+            test: Box::new(|x| x % 19 == 0),
+            true_dest: 2,
+            false_dest: 0,
+            inspect_count: 0
+        },
+        Monkey {
+            id: 2,
+            staring_items: vec!{79, 60, 97},
+            operation: Box::new(|x| x * x),
+            test: Box::new(|x| x % 13 == 0),
+            true_dest: 1,
+            false_dest: 3,
+            inspect_count: 0
+        },
+        Monkey {
+            id: 3,
+            staring_items: vec!{74},
+            operation: Box::new(|x| x + 3),
+            test: Box::new(|x| x % 17 == 0),
+            true_dest: 0,
+            false_dest: 1,
+            inspect_count: 0
+        },
+    };
+    Input { monkeys, lcm: 23 * 19 * 13 * 17 }
+}
+
+fn get_monkey_business(monkeys: &Vec<Monkey>) -> usize {
+    let (first, second) = monkeys.iter()
+        .map(|m| m.inspect_count)
+        .sorted()
+        .rev()
+        .take(2).collect_tuple().unwrap();
+    first * second
+}
+
+#[test]
+fn test_round_with_lcm() {
+    let Input { mut monkeys, lcm } = create_example_input();
+    for _ in 0..10_000 {
+        for i in 0..monkeys.len() {
+            let thrown_info_list = monkeys[i].round_with_lcm(lcm);
+            for info in thrown_info_list {
+                monkeys[info.id].accept(&info)
+            }
+        }
+    }
+    let monkey_business = get_monkey_business(&monkeys);
+    assert_eq!(monkey_business, 2713310158);
+}
+
 fn main() {
-    let mut monkeys = create_monkeys();
+    let Input { mut monkeys, .. } = create_input();
     for _ in 0..20 {
         for i in 0..monkeys.len() {
             let thrown_info_list = monkeys[i].round();
@@ -168,10 +259,18 @@ fn main() {
             }
         }
     }
-    let (first, second) = monkeys.iter()
-        .map(|m| m.inspect_count)
-        .sorted()
-        .rev()
-        .take(2).collect_tuple().unwrap();
-    println!("Part 1: {}", first * second);
+    let monkey_business = get_monkey_business(&monkeys);
+    println!("Part 1: {}", monkey_business);
+
+    let Input { mut monkeys, lcm } = create_input();
+    for _ in 0..10_000 {
+        for i in 0..monkeys.len() {
+            let thrown_info_list = monkeys[i].round_with_lcm(lcm);
+            for info in thrown_info_list {
+                monkeys[info.id].accept(&info)
+            }
+        }
+    }
+    let monkey_business = get_monkey_business(&monkeys);
+    println!("Part 2: {}", monkey_business);
 }
