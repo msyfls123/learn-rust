@@ -47,21 +47,29 @@ fn find_start(map: &HeightMap) -> Position {
     }).unwrap().to_owned()
 }
 
-fn shortest_path(map: &HeightMap, size: (usize, usize)) -> Option<usize> {
+fn shortest_path(
+    map: &HeightMap,
+    size: (usize, usize),
+    start_points: Vec<Position>
+) -> Option<usize> {
     let mut dist: DistanceMap = HashMap::new();
     for (&pos, _) in map {
         dist.insert(pos, usize::MAX);
     }
 
     let mut heap = BinaryHeap::new();
-    let start = find_start(map);
+    let start_point = find_start(map);
 
-    let start_entry =  dist.get_mut(&start).unwrap();
-    *start_entry = 0;
-    heap.push(Point{ steps: vec!{}, position: start });
+    for start in start_points {
+
+        let start_entry =  dist.get_mut(&start).unwrap();
+        *start_entry = 0;
+        heap.push(Point{ steps: vec!{}, position: start });
+    }
+
 
     while let Some(Point { steps, position }) = heap.pop() {
-        let val = if position == start {
+        let val = if position == start_point {
             'a'
         } else {
             *map.get(&position).unwrap()
@@ -116,6 +124,18 @@ fn main() {
     let data = get_str_array_from_file(&vec!{"aoc2022", "data", "12.txt"});
     let map = parse_height_map(&data);
     let size = (data[0].len(), data.len());
-    let steps = shortest_path(&map, size);
+    let start = find_start(&map);
+    let steps = shortest_path(&map, size, vec!{start});
     println!("Part 1: {:?}", steps);
+
+    let all_a_squares = map.iter().filter_map(|(pos, val)| {
+        if val == &'a' {
+            Some(*pos)
+        } else {
+            None
+        }
+    }).collect();
+    let steps = shortest_path(&map, size, all_a_squares);
+    println!("Part 2: {:?}", steps);
+
 }
