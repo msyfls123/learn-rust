@@ -4,5 +4,12 @@
     "ghcr.io/devcontainers/features/rust:1": {
       "profile": "default"
     }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscodevim.vim"
+      ]
+    }
   }
 }
