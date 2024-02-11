@@ -69,4 +69,17 @@ fn main() {
     }).sum();
 
     println!("Part 1: {}", compare_results);
+
+    let packets: Vec<String> = data.iter().flatten().map(|v| v.to_owned()).collect();
+
+    let one = "[[2]]";
+    let two = "[[6]]";
+
+    let one_index = packets.iter().filter(|p| {
+        cmp_str(p, &one) == Ordering::Less
+    }).count() + 1;
+    let two_index = packets.iter().filter(|p| {
+        cmp_str(p, &two) == Ordering::Less
+    }).count() + 2;
+    println!("Part 2: {}", one_index * two_index);
 }
