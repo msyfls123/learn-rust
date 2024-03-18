@@ -95,3 +95,47 @@ mod matrix {
     );
   }
 }
+
+pub type Point<T> = (T, T);
+
+pub struct Range<T> {
+  pub min: Point<T>,
+  pub max: Point<T>,
+}
+
+pub fn calc_range_of_points<T: PartialOrd + Ord + Copy>(points: &Vec<Point<T>>) -> Range<T> {
+  let mut min_x = None;
+  let mut max_x = None;
+  let mut min_y = None;
+  let mut max_y = None;
+  for (x, y) in points {
+    if min_x.is_none() || x < &min_x.unwrap() {
+      min_x = Some(x.to_owned());
+    }
+    if max_x.is_none() || x > &max_x.unwrap() {
+      max_x = Some(x.to_owned());
+    }
+    if min_y.is_none() || y < &min_y.unwrap() {
+      min_y = Some(y.to_owned());
+    }
+    if max_y.is_none() || y > &max_y.unwrap() {
+      max_y = Some(y.to_owned());
+    }
+  }
+  Range {
+    min: (min_x.unwrap(), min_y.unwrap()),
+    max: (max_x.unwrap(), max_y.unwrap()),
+  }
+}
+
+#[test]
+fn test_calc_range_of_points() {
+  let points = vec!{
+    (1, 2),
+    (3, 4),
+    (5, 6),
+  };
+  let range = calc_range_of_points(&points);
+  assert_eq!((1, 2), range.min);
+  assert_eq!((5, 6), range.max);
+}
