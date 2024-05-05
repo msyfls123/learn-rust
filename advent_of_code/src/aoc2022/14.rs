@@ -97,12 +97,47 @@ fn fall(map: &mut PointSet, range: &Range<usize>) -> bool {
     return true;
 }
 
+fn fall_map(map: &mut PointSet, floor: usize) -> Position {
+    let mut sand = START_POINT;
+    while sand.1 <= floor {
+        if sand.1 == floor {
+            map.insert(sand);
+            return sand;
+        }
+        let down = (sand.0, sand.1 + 1);
+        let down_left = (sand.0 - 1, sand.1 + 1);
+        let down_right = (sand.0 + 1, sand.1 + 1);
+        if !map.contains(&down) {
+            sand = down;
+            continue;
+        } else if !map.contains(&down_left) {
+            sand = down_left;
+            continue;
+        } else if !map.contains(&down_right) {
+            sand = down_right;
+            continue;
+        } else {
+            map.insert(sand);
+            return sand;
+        }
+    }
+    panic!("sand fall out floor")
+}
+
 fn main() {
     let data = get_str_array_from_file(&vec!{"aoc2022", "data", "14.txt"});
     let mut map = build_map(&data);
     let range = calc_range_of_points(&map.clone().into_iter().collect());
+    let mut map1 = map.clone();
     let rest_sand_count = (0..).take_while(|_| {
-        !fall(&mut map, &range)
+        !fall(&mut map1, &range)
     }).count();
     println!("Part 1: {}", rest_sand_count);
+
+    let mut map2 = map.clone();
+    let floor = range.max.1 + 1;
+    let sand_units = (0..).take_while(|_| {
+        fall_map(&mut map2, floor) != START_POINT
+    }).count() + 1;
+    println!("Part 1: {}", sand_units);
 }
