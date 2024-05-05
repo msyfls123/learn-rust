@@ -8,7 +8,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "vscodevim.vim"
+        "vscodevim.vim",
+        "rust-lang.rust-analyzer"
       ]
     }
   }
