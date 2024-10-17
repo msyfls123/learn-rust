@@ -1,7 +1,8 @@
 extern crate regex;
 #[macro_use] extern crate lazy_static;
 
-use std::collections::HashSet;
+use std::ops::Range;
+use std::{collections::HashSet, convert::TryInto};
 use advent_of_code::get_str_array_from_file;
 use regex::Regex;
 
@@ -10,6 +11,32 @@ type Point = (isize, isize);
 struct Report {
     sensor: (isize, isize),
     beacon: (isize, isize),
+}
+
+impl Report {
+    fn get_distance(&self) -> usize {
+        ((self.sensor.0 - self.beacon.0).abs() + (self.sensor.1 - self.beacon.1).abs()).try_into().unwrap()
+    }
+
+    fn get_x_range(&self, y: isize) -> Range<isize> {
+        let dy = (self.sensor.1 - y).abs();
+        let distance = self.get_distance() as isize;
+        if distance < dy {
+            Range::default()
+        } else {
+            let dx = distance - dy;
+            (self.sensor.0 - dx..self.sensor.0 + dx + 1)
+        }
+    }
+}
+
+#[test]
+fn test_get_x_range() {
+    let report = Report {
+        beacon: (2, 10),
+        sensor: (8, 7),
+    };
+    assert_eq!(report.get_x_range(10), Range::from(2..15));
 }
 
 fn parse(input: &str) -> Report {
